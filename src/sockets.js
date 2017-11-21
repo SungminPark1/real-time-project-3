@@ -1,106 +1,36 @@
 const xxh = require('xxhashjs');
-// const child = require('child_process');
 const Game = require('./game/game.js');
-// const Message = require('./message.js');
+const Message = require('./message.js');
 
 let io;
 const gameRooms = {};
-// const collision = child.fork('./src/game/collision.js');
-
-/*
-  Message types
-  lockPos
-  playerColliding
-  playerHit
-  deadCollide
-
-  collision.on('message', (m) => {
-    switch (m.type) {
-      case 'lockPos': {
-        const room = gameRooms[m.data.roomKey];
-
-        // lock their pos
-        room.lockPlayerPos(m.data.p1Hash);
-        room.lockPlayerPos(m.data.p2Hash);
-
-        break;
-      }
-      case 'playerHit': {
-        const room = gameRooms[m.data.roomKey];
-
-        // set player.dead to true
-        room.players[m.data.p1Hash].dead = true;
-
-        io.sockets.in(m.data.roomKey).emit('playerDead', {
-          hash: m.data.p1Hash,
-          dead: true,
-        });
-        break;
-      }
-      case 'playerColliding': {
-        const room = gameRooms[m.data.roomKey];
-
-        // set both player to colliding value
-        room.playersColliding(m.data.p1Hash, m.data.p2Hash, m.data.colliding);
-
-        break;
-      }
-      case 'deadCollide': {
-        // might not be needed?
-        console.log('deadCollide');
-        const room = gameRooms[m.data.roomKey];
-
-        // dead players should have colliding as false
-        room.players[m.data.p1Hash].colliding = false;
-
-        break;
-      }
-      default: {
-        console.log(`unclear type: ${m.type} from collision.js`);
-        break;
-      }
-    }
-  });
-
-  collision.on('error', (error) => {
-    console.dir(error);
-  });
-
-  collision.on('close', (code, signal) => {
-    console.log(`Child closed with ${code} ${signal}`);
-  });
-
-  collision.on('exit', (code, signal) => {
-    console.log(`Child exited with ${code} ${signal}`);
-  });
-*/
 
 // update room data and sent data to client at set interval
-const updateRoom = (room) => {
-  gameRooms[room].update();
+/*
+  const updateRoom = (room) => {
+    gameRooms[room].update();
 
-  // send message to update child process rooms
+    // send message to update child process rooms
 
-  /*
-  const { state, clientPlayers, clientBullets } = gameRooms[room];
+    const { state, clientPlayers, clientBullets } = gameRooms[room];
 
-  // only emit bullets, stats and player pos and score?
-  io.sockets.in(room).emit('update', {
-    state,
-    players: clientPlayers,
-    bullets: clientBullets,
-  });
-  */
+    // only emit bullets, stats and player pos and score?
+    io.sockets.in(room).emit('update', {
+      state,
+      players: clientPlayers,
+      bullets: clientBullets,
+    });
 
-  const { state, clientPlayers, clientBullets } = gameRooms[room];
+    const { state, players, clientPlayers, clientBullets } = gameRooms[room];
 
-  // only emit bullets, stats and player pos and score?
-  io.sockets.in(room).emit('update', {
-    state,
-    players: clientPlayers,
-    bullets: clientBullets,
-  });
-};
+    // only emit bullets, stats and player pos and score?
+    io.sockets.in(room).emit('update', {
+      state,
+      players: players,
+      bullets: clientBullets,
+    });
+  };
+*/
 
 // on connect put player in lobby
 const onJoin = (sock) => {
@@ -146,18 +76,21 @@ const onChangeRoom = (sock) => {
       socket.room = data.room;
 
       gameRooms[data.room] = new Game(data.room);
-      gameRooms[data.room].addPlayer(data.user);
+      const room = gameRooms[data.room];
 
-      gameRooms[data.room].interval = setInterval(() => {
-        updateRoom(data.room, io);
-      }, 1000 / 60);
+      room.startUpdate(io);
+      // gameRooms[data.room].addPlayer(data.user);
 
-      socket.emit('initData', {
-        state: gameRooms[data.room].state,
-        dt: gameRooms[data.room].dt,
-        players: gameRooms[data.room].players,
-        bullets: gameRooms[data.room].bullets,
-      });
+      // fire to create room in child process
+      room.update.send(new Message('initData', {
+        room: {
+          ...room,
+          update: null,
+        },
+        playerHash: socket.hash,
+        playerId: socket.id,
+        playerName: data.user.name,
+      }));
     } else {
       // check if username is already in use
       const keys = Object.keys(gameRooms[data.room].players);
@@ -173,19 +106,14 @@ const onChangeRoom = (sock) => {
       socket.join(data.room);
       socket.room = data.room;
 
-      gameRooms[data.room].addPlayer(data.user);
+      const room = gameRooms[data.room];
 
-      socket.emit('initData', {
-        state: gameRooms[data.room].state,
-        dt: gameRooms[data.room].dt,
-        players: gameRooms[data.room].players,
-        bullets: gameRooms[data.room].bullets,
-      });
-
-      socket.broadcast.emit('addPlayer', {
-        hash: socket.hash,
-        player: gameRooms[data.room].players[socket.hash],
-      });
+      // add player to child process update
+      room.update.send(new Message('addPlayer', {
+        playerHash: socket.hash,
+        playerId: socket.id,
+        player: room.players[socket.hash],
+      }));
     }
   });
 };
@@ -218,9 +146,12 @@ const onUpdatePlayer = (sock) => {
 
   socket.on('updatePlayer', (user) => {
     const room = gameRooms[socket.room];
-    const player = room.players[socket.hash];
 
-    player.update(user);
+    // send updated position to child process update
+    room.update.send(new Message('updatePlayer', {
+      playerHash: socket.hash,
+      player: user,
+    }));
   });
 };
 

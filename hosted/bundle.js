@@ -111,7 +111,6 @@ var updateMovement = function updateMovement(state) {
   // if this client's user moves, send to server to update server
   if (updated === true || checkX || checkY) {
     socket.emit('updatePlayer', {
-      time: new Date().getTime(),
       pos: user.pos,
       prevPos: user.prevPos,
       destPos: user.destPos,
@@ -142,40 +141,56 @@ var drawStrokeCircle = function drawStrokeCircle(pos, radius, color, opacity, wi
 };
 
 var drawPlayer = function drawPlayer(player) {
-  var opacity = player.dead ? 0.25 : 1;
   var graze = player.hitbox + player.graze;
+  var opacity = 1;
   var color = {};
   var sAngle = 0;
   var eAngle = 0;
 
+  if (player.alive && player.hit > 0) {
+    opacity = 0.75;
+  } else if (!player.alive) {
+    opacity = 0.5;
+  }
+
   // player hitbox
   drawFillCircle(player.pos, player.hitbox, player.color, opacity, 0, Math.PI * 2, false);
 
-  // draw graze circle
-  color = { r: 255, g: 255, b: 255 };
-  drawStrokeCircle(player.pos, graze, color, 1, 2, 0, Math.PI * 2, false);
+  // if alive - draw stats when alive
+  // else - draw revive timer
+  if (player.alive) {
+    // draw graze circle
+    color = { r: 255, g: 255, b: 255 };
+    drawStrokeCircle(player.pos, graze, color, 1, 2, 0, Math.PI * 2, false);
 
-  // draw attack bar
-  color = { r: 255, g: 255, b: 255 };
-  sAngle = Math.PI / 2;
-  eAngle = -Math.PI * ((player.attRate - player.currentAttRate) / player.attRate);
-  drawStrokeCircle(player.pos, player.hitbox + 1, color, 1, 2, sAngle, sAngle + eAngle, true);
+    // draw attack bar
+    color = { r: 255, g: 255, b: 255 };
+    sAngle = Math.PI / 2;
+    eAngle = -Math.PI * ((player.attRate - player.currentAttRate) / player.attRate);
+    drawStrokeCircle(player.pos, player.hitbox + 1, color, 1, 2, sAngle, sAngle + eAngle, true);
 
-  // draw energy bar
-  color = { r: 0, g: 0, b: 255 };
-  eAngle = -Math.PI * (player.energy / player.maxEnergy);
-  drawStrokeCircle(player.pos, graze, color, 1, 2, sAngle, sAngle + eAngle, true);
+    // draw energy bar
+    color = { r: 0, g: 0, b: 255 };
+    eAngle = -Math.PI * (player.energy / player.maxEnergy);
+    drawStrokeCircle(player.pos, graze, color, 1, 2, sAngle, sAngle + eAngle, true);
 
-  // draw exp bar
-  color = { r: 255, g: 255, b: 0 };
-  sAngle = Math.PI / 2;
-  eAngle = Math.PI * (player.currentExp / player.exp);
-  drawStrokeCircle(player.pos, player.hitbox + 1, color, 1, 2, sAngle, sAngle + eAngle, false);
+    // draw exp bar
+    color = { r: 255, g: 255, b: 0 };
+    sAngle = Math.PI / 2;
+    eAngle = Math.PI * (player.currentExp / player.exp);
+    drawStrokeCircle(player.pos, player.hitbox + 1, color, 1, 2, sAngle, sAngle + eAngle, false);
 
-  // draw hp bar
-  color = { r: 255, g: 0, b: 0 };
-  eAngle = Math.PI * (player.hp / player.maxHp);
-  drawStrokeCircle(player.pos, graze, color, 1, 2, sAngle, sAngle + eAngle, false);
+    // draw hp bar
+    color = { r: 255, g: 0, b: 0 };
+    eAngle = Math.PI * (player.hp / player.maxHp);
+    drawStrokeCircle(player.pos, graze, color, 1, 2, sAngle, sAngle + eAngle, false);
+  } else {
+    // draw revive bar
+    color = { r: 255, g: 255, b: 0 };
+    sAngle = Math.PI / 2;
+    eAngle = Math.PI * 2 * ((player.reviveTime - player.reviveTimer) / player.reviveTime);
+    drawStrokeCircle(player.pos, graze, color, 1, 2, sAngle, sAngle + eAngle, false);
+  }
 };
 
 // draw players
@@ -211,36 +226,38 @@ var drawPlayers = function drawPlayers() {
 var drawBullets = function drawBullets() {
   for (var i = 0; i < bullets.length; i++) {
     var bullet = bullets[i];
-    var fill = 'rgba(0, 0, 0, ' + (bullet.drained ? 1 : 0.5) + ')';
+    var fill = 'rgba(255, 255, 255, ' + (!bullet.drained ? 1 : 0.5) + ')';
 
-    ctx.strokeStyle = 'white';
+    ctx.save();
+    ctx.strokeStyle = 'black';
     ctx.fillStyle = fill;
     ctx.beginPath();
     ctx.arc(bullet.pos.x, bullet.pos.y, bullet.radius, 0, Math.PI * 2, false);
-    ctx.stroke();
     ctx.fill();
+    ctx.stroke();
     ctx.closePath();
+    ctx.restore();
   }
 };
 
 /*
-// draw text
-const drawText = (text, x, y = 40, size = 30) => {
-  ctx.fillStyle = 'black';
-  ctx.font = `${size}px Arial`;
-  ctx.fillText(text, x, y);
-};
+  // draw text
+  const drawText = (text, x, y = 40, size = 30) => {
+    ctx.fillStyle = 'black';
+    ctx.font = `${size}px Arial`;
+    ctx.fillText(text, x, y);
+  };
 
-const checkReady = () => {
-  const user = players[hash];
+  const checkReady = () => {
+    const user = players[hash];
 
-  // emit only when current keypress is down and previous is up
-  if (myKeys.keydown[myKeys.KEYBOARD.KEY_SPACE] && !previousKeyDown) {
-    socket.emit('togglePlayerReady', {
-      ready: !user.ready,
-    });
-  }
-};
+    // emit only when current keypress is down and previous is up
+    if (myKeys.keydown[myKeys.KEYBOARD.KEY_SPACE] && !previousKeyDown) {
+      socket.emit('togglePlayerReady', {
+        ready: !user.ready,
+      });
+    }
+  };
 */
 
 // players can move and update ready state.
@@ -295,7 +312,26 @@ var updatePlayer = function updatePlayer(users) {
     // if player exist and last update is less than server's - update the player
     // else - do nothing
     if (player) {
+      console.log(updatedPlayer.pos);
       // values that should be constantly updated
+      player.hp = updatedPlayer.hp;
+      player.energy = updatedPlayer.energy;
+      player.currentAttRate = updatedPlayer.currentAttRate;
+      player.currentExp = updatedPlayer.currentExp;
+      player.hit = updatedPlayer.hit;
+
+      // move to on levelUp sever emit
+      player.hitbox = updatedPlayer.hitbox;
+      player.graze = updatedPlayer.graze;
+      player.maxHp = updatedPlayer.maxHp;
+      player.maxEnergy = updatedPlayer.maxEnergy;
+      player.attRate = updatedPlayer.attRate;
+      player.exp = updatedPlayer.exp;
+
+      // move to on dead
+      player.alive = updatedPlayer.alive;
+      player.reviveTimer = updatedPlayer.reviveTimer;
+      player.reviveTime = updatedPlayer.reviveTime;
 
       // values that should be updated if the client emited updatedPlayer
       if (player.lastUpdate < updatedPlayer.lastUpdate) {
@@ -361,6 +397,8 @@ var setupSocket = function setupSocket() {
 
   // get other clients data from server
   socket.on('initData', function (data) {
+    console.log(data);
+
     roomState = data.state;
     players = data.players;
     bullets = data.bullets;

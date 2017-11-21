@@ -6,7 +6,7 @@ class Enemy {
   constructor(level) {
     this.hp = 25 + (25 * level);
     this.maxHp = 25 + (25 * level);
-    this.damage = 0;
+    this.damage = 1;
     this.difficulty = 0;
     this.emitters = [];
     this.bullets = [];
@@ -15,15 +15,14 @@ class Enemy {
     this.currentAttackDur = 300;
     this.attackDur = 300;
 
-    this.currentRestDur = 60;
-    this.restDur = 60;
+    this.currentRestDur = 180;
+    this.restDur = 180;
 
     this.lastRotation = 0;
     this.startIndex = 0;
 
     // data only clients would need for draw
     this.clientEmitters = [];
-    this.clientBullets = [];
   }
 
   // TO DO: pattern creates emitter -> update emitter in update ->
@@ -37,7 +36,7 @@ class Enemy {
     */
     if (this.currentAttackDur % 10 === 0) {
       const pos = new Victor(320, 50);
-      const vel = new Victor(utils.getRandomInt(11, -5), utils.getRandomInt(5, 1));
+      const vel = new Victor(utils.getRandomInt(61, -30), utils.getRandomInt(30, 41));
 
       this.bullets.push(new Bullet(pos, vel, 10));
     }

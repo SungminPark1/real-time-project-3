@@ -2,6 +2,7 @@
 class Player {
   constructor(user) {
     this.hash = user.hash;
+    this.id = user.id;
     this.name = user.name;
     this.lastUpdate = new Date().getTime();
     this.pos = {
@@ -71,6 +72,7 @@ class Player {
       hp,
       energy,
       currentAttRate,
+      currentExp,
       hit,
     } = this;
 
@@ -83,6 +85,7 @@ class Player {
       hp,
       energy,
       currentAttRate,
+      currentExp,
       hit,
     };
   }

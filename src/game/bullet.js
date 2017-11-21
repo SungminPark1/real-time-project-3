@@ -16,8 +16,6 @@ class Bullet {
   inBounds() {
     if (this.pos.x <= -50 || this.pos.x > 690 || this.pos.y <= -50 || this.pos.y > 690) {
       this.active = false;
-    } else {
-      this.active = true;
     }
   }
 
@@ -68,7 +66,8 @@ class Bullet {
     if (this.curve) {
       this.updateCurve();
     }
-    this.pos.add(new Victor(this.velocity.x * dt, this.velocity.y * dt));
+
+    this.pos.add(new Victor((this.velocity.x * dt), (this.velocity.y * dt)));
     this.inBounds();
   }
 

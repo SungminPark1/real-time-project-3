@@ -17,7 +17,7 @@ class Fighter extends Player {
     this.hp = 10;
     this.maxHp = 10;
 
-    this.energy = 10;
+    this.energy = 0;
     this.maxEnergy = 20;
     this.capEnergy = 50;
 
@@ -27,7 +27,7 @@ class Fighter extends Player {
     this.graze = 15;
     this.capGraze = 30;
 
-    this.currentAttRate = 5; // change to tick rate?
+    this.currentAttRate = 10; // change to tick rate?
     this.attRate = 10;
     this.capAttRate = 1;
 
@@ -41,7 +41,7 @@ class Fighter extends Player {
     this.invul = 0.5;
     this.capInvul = 2;
 
-    this.currentExp = 5;
+    this.currentExp = 0;
     this.exp = 10;
 
     this.skill1Name = 'Final Strike';
@@ -92,24 +92,23 @@ class Fighter extends Player {
     this.maxHp += 4; // 2 star
     this.hp += 4;
 
-    this.maxEnergy = Math.min((this.maxEnergy + 1), this.energyCap); // 1 star
+    this.maxEnergy = Math.min((this.maxEnergy + 1), this.capEnergy); // 1 star
 
-    this.hitbox = Math.max((this.hitbox - 0.5), this.hitboxCap); // 1 star
+    this.hitbox = Math.max((this.hitbox - 0.5), this.capHitbox); // 1 star
 
-    this.grazeRadius = Math.min((this.grazeRadius + 0.5), this.grazeRadiusCap); // 1 star
+    this.graze = Math.min((this.graze + 0.5), this.capGraze); // 1 star
 
-    this.attackRate = Math.max((this.attackRate - 25), this.attackRateCap); // 3 star
+    this.attRate = Math.max((this.attRate - 0.3), this.capAttRate); // 3 star
 
     this.maxDamage += 6; // 3 star
-
     this.minDamage += 3; // 3 star
 
-    this.speed = Math.min((this.speed + 5), this.speedCap); // 2 star
+    this.speed = Math.min((this.speed + 5), this.capSpeed); // 2 star
 
-    this.invul = Math.min((this.invul + 1), this.invulCap); // 1 star
+    this.invul = Math.min((this.invul + 0.05), this.capInvul); // 1 star
 
     this.currentExp = 0;
-    this.exp += 10;
+    this.exp += 5;
   }
 }
 
