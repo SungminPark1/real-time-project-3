@@ -19,7 +19,7 @@ class Player {
     };
     this.level = 1;
 
-    this.alive = true;
+    this.isAlive = true;
     this.reviveTimer = 0;
     this.reviveTime = 1200;
 
@@ -46,6 +46,7 @@ class Player {
     this.speed = 100;
     this.capSpeed = 200;
 
+    this.isHit = false;
     this.hit = 0;
     this.invul = 30;
     this.capInvul = 120;
@@ -73,7 +74,10 @@ class Player {
       energy,
       currentAttRate,
       currentExp,
-      hit,
+      isHit,
+      reviveTimer,
+      skill1Used,
+      skill2Used,
     } = this;
 
     return {
@@ -86,8 +90,18 @@ class Player {
       energy,
       currentAttRate,
       currentExp,
-      hit,
+      isHit,
+      reviveTimer,
+      skill1Used,
+      skill2Used,
     };
+  }
+
+  // return max stats
+  getMaxStats() {
+    const { maxHp, maxEnergy, maxDamage, minDamage, attRate, exp, hitbox, graze } = this;
+
+    return { maxHp, maxEnergy, maxDamage, minDamage, attRate, exp, hitbox, graze };
   }
 
   update(user) {

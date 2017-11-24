@@ -10,7 +10,7 @@ class Fighter extends Player {
     this.color = color;
     this.level = 1;
 
-    this.alive = true;
+    this.isAlive = true;
     this.reviveTimer = 0; // change to tick rate?
     this.reviveTime = 5;
 
@@ -37,6 +37,7 @@ class Fighter extends Player {
     this.speed = 100;
     this.capSpeed = 200;
 
+    this.isHit = false;
     this.hit = 0; // change to tick rate?
     this.invul = 0.5;
     this.capInvul = 2;

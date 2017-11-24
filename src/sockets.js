@@ -1,5 +1,5 @@
 const xxh = require('xxhashjs');
-const Game = require('./game/game.js');
+const Room = require('./game/room.js');
 const Message = require('./message.js');
 
 let io;
@@ -75,7 +75,7 @@ const onChangeRoom = (sock) => {
       socket.join(data.room);
       socket.room = data.room;
 
-      gameRooms[data.room] = new Game(data.room);
+      gameRooms[data.room] = new Room(data.room);
       const room = gameRooms[data.room];
 
       room.startUpdate(io);
@@ -83,10 +83,7 @@ const onChangeRoom = (sock) => {
 
       // fire to create room in child process
       room.update.send(new Message('initData', {
-        room: {
-          ...room,
-          update: null,
-        },
+        room: data.room,
         playerHash: socket.hash,
         playerId: socket.id,
         playerName: data.user.name,
@@ -185,14 +182,17 @@ const onDisconnect = (sock) => {
 
         // check if the game's room matches the socket's room
         if (game.room === socket.room) {
-          game.deletePlayer(socket.hash);
+          // delete player in child process
+          game.update.send(new Message('deletePlayer', {
+            playerHash: socket.hash,
+          }));
 
-          io.sockets.in(socket.room).emit('removePlayer', socket.hash);
+          delete game.players[socket.hash];
 
           socket.leave(socket.room);
           // deletes room if no players exist in it
           if (Object.keys(game.players).length === 0) {
-            clearInterval(game.interval);
+            game.update.kill();
 
             delete gameRooms[keys[i]];
           }

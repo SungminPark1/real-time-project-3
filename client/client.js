@@ -45,6 +45,7 @@ const myKeys = {
   keydown: [],
 };
 
+// Utils
 // returns an object { x: var, y: var }
 const lerpPos = (pos0, pos1, alpha) => {
   const x = ((1 - alpha) * pos0.x) + (alpha * pos1.x);
@@ -58,6 +59,24 @@ const lerpPos = (pos0, pos1, alpha) => {
 };
 
 const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
+
+// used to create client side attack circles and random particle directions
+const getRandomUnitVector = () => {
+  let x = (Math.random() * 2) - 1;
+  let y = (Math.random() * 2) - 1;
+  let length = Math.sqrt((x * x) + (y * y));
+
+  if (length === 0) { // very unlikely
+    x = 1; // point right
+    y = 0;
+    length = 1;
+  } else {
+    x /= length;
+    y /= length;
+  }
+
+  return { x, y };
+};
 
 const updateMovement = (state) => {
   const user = players[hash];
@@ -143,9 +162,9 @@ const drawPlayer = (player) => {
   let sAngle = 0;
   let eAngle = 0;
 
-  if (player.alive && player.hit > 0) {
+  if (player.isAlive && player.isHit) {
     opacity = 0.75;
-  } else if (!player.alive) {
+  } else if (!player.isAlive) {
     opacity = 0.5;
   }
 
@@ -154,7 +173,7 @@ const drawPlayer = (player) => {
 
   // if alive - draw stats when alive
   // else - draw revive timer
-  if (player.alive) {
+  if (player.isAlive) {
     // draw graze circle
     color = { r: 255, g: 255, b: 255 };
     drawStrokeCircle(player.pos, graze, color, 1, 2, 0, Math.PI * 2, false);
@@ -308,26 +327,13 @@ const updatePlayer = (users) => {
     // if player exist and last update is less than server's - update the player
     // else - do nothing
     if (player) {
-      console.log(updatedPlayer.pos);
       // values that should be constantly updated
       player.hp = updatedPlayer.hp;
       player.energy = updatedPlayer.energy;
       player.currentAttRate = updatedPlayer.currentAttRate;
       player.currentExp = updatedPlayer.currentExp;
-      player.hit = updatedPlayer.hit;
-
-      // move to on levelUp sever emit
-      player.hitbox = updatedPlayer.hitbox;
-      player.graze = updatedPlayer.graze;
-      player.maxHp = updatedPlayer.maxHp;
-      player.maxEnergy = updatedPlayer.maxEnergy;
-      player.attRate = updatedPlayer.attRate;
-      player.exp = updatedPlayer.exp;
-
-      // move to on dead
-      player.alive = updatedPlayer.alive;
+      player.isHit = updatedPlayer.isHit;
       player.reviveTimer = updatedPlayer.reviveTimer;
-      player.reviveTime = updatedPlayer.reviveTime;
 
       // values that should be updated if the client emited updatedPlayer
       if (player.lastUpdate < updatedPlayer.lastUpdate) {
@@ -364,28 +370,29 @@ const removePlayer = (userHash) => {
   }
 };
 
+const levelPlayer = (data) => {
+  const player = players[data.hash];
+
+  player.maxHp = data.player.maxHp;
+  player.maxEnergy = data.player.maxEnergy;
+  player.maxDamage = data.player.maxDamage;
+  player.minDamage = data.player.minDamage;
+  player.attRate = data.player.attRate;
+  player.exp = data.player.exp;
+  player.hitbox = data.player.hitbox;
+  player.graze = data.player.graze;
+};
+
+const playerIsAlive = (data) => {
+  const player = players[data.hash];
+
+  player.isAlive = data.isAlive;
+  player.reviveTimer = data.reviveTimer;
+  player.reviveTime = data.reviveTime;
+};
+
 const setupSocket = () => {
   socket.emit('join');
-
-  socket.on('update', handleUpdate);
-
-  // socket.on('skillUsed', handleSkill);
-
-  socket.on('addPlayer', addPlayer);
-
-  socket.on('removePlayer', removePlayer);
-
-  socket.on('playerReady', (data) => {
-    const player = players[data.hash];
-
-    player.ready = data.ready;
-  });
-
-  socket.on('playerDead', (data) => {
-    const player = players[data.hash];
-
-    player.dead = data.dead;
-  });
 
   socket.on('hash', (data) => {
     hash = data.hash;
@@ -393,8 +400,6 @@ const setupSocket = () => {
 
   // get other clients data from server
   socket.on('initData', (data) => {
-    console.log(data);
-
     roomState = data.state;
     players = data.players;
     bullets = data.bullets;
@@ -403,6 +408,24 @@ const setupSocket = () => {
     roomInfo.style.display = 'none';
 
     window.requestAnimationFrame(handleDraw);
+  });
+
+  socket.on('update', handleUpdate);
+
+  socket.on('addPlayer', addPlayer);
+
+  socket.on('removePlayer', removePlayer);
+
+  socket.on('levelPlayer', levelPlayer);
+
+  socket.on('playerIsAlive', playerIsAlive);
+
+  // socket.on('skillUsed', handleSkill);
+
+  socket.on('playerReady', (data) => {
+    const player = players[data.hash];
+
+    player.ready = data.ready;
   });
 
   socket.on('roomList', (data) => {
