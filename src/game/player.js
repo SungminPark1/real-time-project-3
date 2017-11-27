@@ -5,6 +5,7 @@ class Player {
     this.id = user.id;
     this.name = user.name;
     this.lastUpdate = new Date().getTime();
+    this.ready = false;
     this.pos = {
       x: 0,
       y: 0,
@@ -21,14 +22,13 @@ class Player {
 
     this.isAlive = true;
     this.reviveTimer = 0;
-    this.reviveTime = 1200;
+    this.reviveTime = 5;
 
     this.hp = 10;
     this.maxHp = 10;
 
     this.energy = 0;
     this.maxEnergy = 20;
-    this.capEnergy = 50;
 
     this.hitbox = 25;
     this.capHitbox = 12;
@@ -36,6 +36,7 @@ class Player {
     this.graze = 15;
     this.capGraze = 30;
 
+    this.attacking = false;
     this.currentAttRate = 600;
     this.attRate = 600;
     this.capAttRate = 60;
@@ -48,8 +49,8 @@ class Player {
 
     this.isHit = false;
     this.hit = 0;
-    this.invul = 30;
-    this.capInvul = 120;
+    this.invul = 0.5;
+    this.capInvul = 3;
 
     this.currentExp = 0;
     this.exp = 10;
@@ -111,7 +112,15 @@ class Player {
     this.prevPos = user.prevPos;
     this.destPos = user.destPos;
 
-    // this.usedSkill = user.usedSkill;
+    if (user.attacking) {
+      this.attacking = true;
+    }
+    if (user.toggleSkill1) {
+      this.skill1Used = !this.skill1Used;
+    }
+    if (user.toggleSkill2) {
+      this.skill2Used = !this.skill2Used;
+    }
   }
 
   toggleReady(user) {

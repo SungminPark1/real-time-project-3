@@ -1,7 +1,10 @@
 const Fighter = require('./classes/fighter.js');
+const Bomber = require('./classes/bomber.js');
+const Aura = require('./classes/aura.js');
+const Cleric = require('./classes/cleric.js');
 const Enemy = require('./enemy.js');
-const utils = require('../utils.js');
 const Message = require('../message.js');
+const utils = require('../utils.js');
 
 const GAME_PREPARING = 'preparing';
 const GAME_PLAYING = 'playing';
@@ -75,7 +78,18 @@ class Game {
         y: 400,
       };
 
-      player = new Fighter(user, pos, color);
+      // set character class default to fighter
+      if (player.type === 'fighter') {
+        player = new Fighter(user, pos, color);
+      } else if (player.type === 'bomber') {
+        player = new Bomber(user, pos, color);
+      } else if (player.type === 'aura') {
+        player = new Aura(user, pos, color);
+      } else if (player.type === 'cleric') {
+        player = new Cleric(user, pos, color);
+      } else {
+        player = new Fighter(user, pos, color);
+      }
     }
   }
 
@@ -113,7 +127,7 @@ class Game {
           player.hp -= this.enemy.damage;
           player.isHit = true;
           player.hit = player.invul;
-          player.energy = Math.round(player.energy * 0.75);
+          player.energy = Math.max(player.energy - 2, 0);
 
           bullet.active = false;
 
@@ -125,6 +139,7 @@ class Game {
             player.isAlive = false;
             player.reviveTimer = player.reviveTime;
 
+            // send message with new isAlive value
             process.send(new Message('playerIsAlive', {
               hash: player.hash,
               isAlive: player.isAlive,
@@ -176,6 +191,12 @@ class Game {
         // check if they level up
         if (player.currentExp > player.exp) {
           player.levelUp();
+
+          // emit updated info to players
+          process.send(new Message('levelPlayer', {
+            hash: player.hash,
+            player: player.getMaxStats(),
+          }));
         }
       }
 
@@ -206,12 +227,26 @@ class Game {
             player.currentAttRate = 0;
           }
 
+
+          if (player.attacking) {
+            const range = (player.maxDamage - player.minDamage) + 1;
+
+            this.enemy.hp -= utils.getRandomInt(range, player.minDamage);
+            player.attacking = false;
+            player.currentAttRate = player.attRate;
+
+            // TO DO: ADD emit to rpc attack animation if attacking is true
+          }
           // check skill used
           if (player.skill1Used) {
-            player.skill1(this.enemy, this.player, this.bullets);
+            player.skill1(this.enemy, this.players, this.bullets);
+
+            // TO DO: ADD emit to rpc attack animation if attacking is true
           }
           if (player.skill2Used) {
-            player.skill1(this.enemy, this.player, this.bullets);
+            player.skill2(this.enemy, this.players, this.bullets);
+
+            // TO DO: ADD emit to rpc attack animation if attacking is true
           }
         } else {
           deadPlayers++;
@@ -224,6 +259,7 @@ class Game {
             player.isAlive = true;
             player.hp = player.maxHp;
 
+            // send message with new isAlive value
             process.send(new Message('playerIsAlive', {
               hash: player.hash,
               isAlive: player.isAlive,
@@ -252,6 +288,7 @@ class Game {
     process.send(new Message('updateRoom', {
       state: this.state,
       players: this.clientPlayers,
+      enemy: this.enemy.getClientData(),
       bullets: this.clientBullets,
     }));
   }

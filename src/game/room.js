@@ -5,7 +5,6 @@ class Room {
   constructor(data) {
     this.room = data;
     this.state = GAME_PLAYING; // cycle: preparing -> started -> restarting -> (loop)
-    this.playersNum = 0;
   }
 
   startUpdate(io) {
@@ -14,14 +13,16 @@ class Room {
     this.update.on('message', (m) => {
       switch (m.type) {
         case 'initData': {
-          const { state, players, bullets } = m.data;
+          const { state, players, enemy, bullets } = m.data;
           this.state = state;
           this.players = players;
+          this.enemy = enemy;
 
           // send to new player
           io.to(m.data.id).emit('initData', {
             state,
             players,
+            enemy,
             bullets,
           });
           break;
@@ -29,12 +30,13 @@ class Room {
         case 'addPlayer': {
           this.players[m.data.hash] = m.data.player;
 
-          const { state, players } = this;
+          const { state, players, enemy } = this;
 
           // emit initData to new player
           io.to(m.data.player.id).emit('initData', {
             state,
             players,
+            enemy,
           });
 
           // emit new player to other players
@@ -65,10 +67,11 @@ class Room {
           // TO DO
           // update main server values
 
-          const { state, players, bullets } = m.data;
+          const { state, players, enemy, bullets } = m.data;
           io.sockets.in(this.room).emit('update', {
             state,
             players,
+            enemy,
             bullets,
           });
           break;

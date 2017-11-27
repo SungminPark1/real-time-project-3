@@ -5,33 +5,6 @@ const Message = require('./message.js');
 let io;
 const gameRooms = {};
 
-// update room data and sent data to client at set interval
-/*
-  const updateRoom = (room) => {
-    gameRooms[room].update();
-
-    // send message to update child process rooms
-
-    const { state, clientPlayers, clientBullets } = gameRooms[room];
-
-    // only emit bullets, stats and player pos and score?
-    io.sockets.in(room).emit('update', {
-      state,
-      players: clientPlayers,
-      bullets: clientBullets,
-    });
-
-    const { state, players, clientPlayers, clientBullets } = gameRooms[room];
-
-    // only emit bullets, stats and player pos and score?
-    io.sockets.in(room).emit('update', {
-      state,
-      players: players,
-      bullets: clientBullets,
-    });
-  };
-*/
-
 // on connect put player in lobby
 const onJoin = (sock) => {
   const socket = sock;
@@ -109,7 +82,7 @@ const onChangeRoom = (sock) => {
       room.update.send(new Message('addPlayer', {
         playerHash: socket.hash,
         playerId: socket.id,
-        player: room.players[socket.hash],
+        playerName: data.user.name,
       }));
     }
   });

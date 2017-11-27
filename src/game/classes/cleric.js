@@ -1,9 +1,9 @@
 const Player = require('../player.js');
 
-class Fighter extends Player {
+class Cleric extends Player {
   constructor(user, pos = { x: 250, y: 250 }, color = { r: 255, g: 0, b: 0 }) {
     super(user);
-    this.type = 'fighter';
+    this.type = 'cleric';
     this.ready = false;
     this.pos = pos;
     this.prevPos = { ...this.pos };
@@ -20,10 +20,9 @@ class Fighter extends Player {
 
     this.energy = 0;
     this.maxEnergy = 20;
-    this.capEnergy = 50;
 
-    this.hitbox = 25;
-    this.capHitbox = 12;
+    this.hitbox = 23;
+    this.capHitbox = 10;
 
     this.graze = 15;
     this.capGraze = 35;
@@ -35,7 +34,7 @@ class Fighter extends Player {
     this.maxDamage = 3;
     this.minDamage = 1;
 
-    this.speed = 100;
+    this.speed = 75;
     this.capSpeed = 200;
 
     this.isHit = false;
@@ -46,72 +45,77 @@ class Fighter extends Player {
     this.currentExp = 0;
     this.exp = 10;
 
-    this.skill1Name = 'Final Strike';
-    this.skill1Cost = 5;
+    this.skill1Name = 'Smite';
+    this.skill1Cost = 15;
+    this.smiteDmg = 0.04;
+    this.capSmiteDmg = 0.5;
     this.skill1Used = false;
 
-    this.skill2Name = 'Full Force';
-    this.skill2Cost = 10;
+    this.skill2Name = 'Hp Regen';
+    this.skill2Cost = 0.1;
+    this.hpRegen = 0.02;
+    this.capHpRegen = .5;
     this.skill2Used = false;
   }
 
-  // Final Strike
+  // Smite
+  // damage based on bosses hp, min damage is player's min damage
   skill1(enemy) {
     if (this.energy > this.skill1Cost) {
       const boss = enemy;
-      boss.hp -= this.minDamage;
-
-      // heal player by 10% if it kills the enemy
-      if (boss.hp <= 0) {
-        this.hp = Math.min(this.hp + (this.maxHp * 0.1), this.maxHp);
-      }
+      boss.hp -= Math.max(this.minDamage, boss.hp * this.smiteDmg);
 
       this.energy -= this.skill1Cost;
     }
     this.skill1Used = false;
   }
 
-  // Full Force
-  skill2(enemy) {
+  // Hp Regen
+  skill2(enemy, players) {
     if (this.energy > this.skill2Cost) {
-      const boss = enemy;
-      boss.hp -= (this.maxDamage + this.energy) * (this.energy / 7.5);
+      const keys = Object.keys(players);
 
-      // killing the enemy removes healing from enemy kill
-      if (boss.hp <= 0) {
-        this.hp += -(this.maxHp * 0.2);
+      for (let i = 0; i < keys.length; i++) {
+        const player = players[keys[i]];
+
+        player.hp = Math.min(player.hp + this.hpRegen, player.maxHp);
       }
 
-      this.energy = 0;
+      this.energy -= 0.1;
+    } else {
+      this.skill2Used = false;
     }
-    this.skill2Used = false;
   }
 
   levelUp() {
-    // 18 stars
+    // 16 star
     this.level++;
 
     this.maxHp += 4; // 2 star
     this.hp += 4;
 
-    this.maxEnergy += 1; // 1 star
+    this.maxEnergy += 2; // 2 star
 
     this.hitbox = Math.max((this.hitbox - 0.5), this.capHitbox); // 1 star
 
-    this.graze = Math.min((this.graze + 0.5), this.capGraze); // 1 star
+    this.graze = Math.min((this.graze + 1), this.capGraze); // 2 star
 
     this.attRate = Math.max((this.attRate - 0.3), this.capAttRate); // 3 star
 
     this.maxDamage += 4; // 3 star
-    this.minDamage += 3; // 3 star
+    this.minDamage += 1; // 1 star
 
-    this.speed = Math.min((this.speed + 5), this.capSpeed); // 2 star
+    this.speed = Math.min((this.speed + 2.5), this.capSpeed); // 1 star
 
-    this.invul = Math.min((this.invul + 0.1), this.capInvul); // 2 star
+    this.invul = Math.min((this.invul + 0.05), this.capInvul); // 1 star
+
+    this.smiteDmg = Math.min(this.smiteDmg + 0.02, this.capSmiteDmg);
+
+    this.hpRegen = Math.min(this.hpRegen + 0.01, this.capHpRegen);
 
     this.currentExp = 0;
     this.exp += 5;
   }
 }
 
-module.exports = Fighter;
+module.exports = Cleric;

@@ -4,8 +4,9 @@ const utils = require('../utils.js');
 
 class Enemy {
   constructor(level) {
-    this.hp = 25 + (25 * level);
-    this.maxHp = 25 + (25 * level);
+    this.pos = { x: 320, y: 60 };
+    this.hp = 305 + (25 * level);
+    this.maxHp = 305 + (25 * level);
     this.damage = 1;
     this.difficulty = 0;
     this.emitters = [];
@@ -71,6 +72,12 @@ class Enemy {
     } else {
       this.currentRestDur--;
     }
+  }
+
+  getClientData() {
+    const { hp, maxHp, damage } = this;
+
+    return { hp, maxHp, damage };
   }
 }
 

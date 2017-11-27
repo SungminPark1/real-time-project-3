@@ -2,6 +2,8 @@
 
 var socket = void 0;
 var canvas = void 0;
+var width = 640;
+var height = 640;
 var ctx = void 0;
 
 // overlay vars
@@ -23,13 +25,15 @@ var dt = 0;
 // game related vars
 var roomState = 'preparing';
 var players = {};
+var enemy = {};
 var bullets = [];
 // let skills = [];
 
 // player related vars
 var updated = false;
-var usedSkill = false;
-var previousKeyDown = false;
+var attacking = false;
+var toggleSkill1 = false;
+var toggleSkill2 = false;
 var hash = void 0;
 
 // keyboard stuff
@@ -45,6 +49,13 @@ var myKeys = {
     KEY_SHIFT: 16
   },
   keydown: []
+};
+var prevKeyDown = {
+  KEY_W: false,
+  KEY_S: false,
+  KEY_J: false,
+  KEY_K: false,
+  KEY_L: false
 };
 
 // Utils
@@ -86,14 +97,16 @@ var getRandomUnitVector = function getRandomUnitVector() {
 var updateMovement = function updateMovement(state) {
   var user = players[hash];
   updated = false;
-  usedSkill = false;
+  attacking = false;
+  toggleSkill1 = false;
+  toggleSkill2 = false;
 
   user.prevPos = user.pos;
   user.alpha = 0.05;
 
   // movement check
-  // if shift is down reduce movement by 50%
-  var modifier = myKeys.keydown[myKeys.KEYBOARD.KEY_SHIFT] ? 0.5 : 1;
+  // if shift is down or skill is active reduce movement by 50%
+  var modifier = myKeys.keydown[myKeys.KEYBOARD.KEY_SHIFT] || user.skill1Used || user.skill2Used ? 0.5 : 1;
 
   if (myKeys.keydown[myKeys.KEYBOARD.KEY_W]) {
     user.destPos.y += -user.speed * dt * modifier;
@@ -112,17 +125,34 @@ var updateMovement = function updateMovement(state) {
     updated = true;
   }
 
-  // skill check
+  // check attack and skills
   if (state === 'playing') {
-    if (myKeys.keydown[myKeys.KEYBOARD.KEY_SPACE] && !previousKeyDown) {
-      usedSkill = true;
+    var checkKeyJ = myKeys.keydown[myKeys.KEYBOARD.KEY_J] && !prevKeyDown.KEY_J;
+    var checkKeyK = myKeys.keydown[myKeys.KEYBOARD.KEY_K] && !prevKeyDown.KEY_K;
+    var checkKeyL = myKeys.keydown[myKeys.KEYBOARD.KEY_L] && !prevKeyDown.KEY_L;
+
+    // basic attack
+    if (checkKeyJ && user.currentAttRate <= 0) {
+      attacking = true;
+      updated = true;
+    }
+
+    // skill 1
+    if (checkKeyK && user.energy >= user.skill1Cost) {
+      toggleSkill1 = true;
+      updated = true;
+    }
+
+    // skill 2
+    if (checkKeyL && user.energy >= user.skill2Cost) {
+      toggleSkill2 = true;
       updated = true;
     }
   }
 
   // prevent player from going out of bound
   user.destPos.x = clamp(user.destPos.x, user.hitbox, 640 - user.hitbox);
-  user.destPos.y = clamp(user.destPos.y, user.hitbox, 640 - user.hitbox);
+  user.destPos.y = clamp(user.destPos.y, user.hitbox, 540 - user.hitbox);
 
   // console.log(user.pos, user.prevPos, user.destPos);
   var checkX = user.pos.x > user.destPos.x + 0.05 || user.pos.x < user.destPos.x - 0.05;
@@ -134,7 +164,9 @@ var updateMovement = function updateMovement(state) {
       pos: user.pos,
       prevPos: user.prevPos,
       destPos: user.destPos,
-      usedSkill: usedSkill
+      attacking: attacking,
+      toggleSkill1: toggleSkill1,
+      toggleSkill2: toggleSkill2
     });
   }
 };
@@ -242,6 +274,24 @@ var drawPlayers = function drawPlayers() {
   drawPlayer(user);
 };
 
+// draw enemy
+var drawEnemy = function drawEnemy() {
+  // check if enemy exist remove later when enemy build is all set up ?
+  if (enemy) {
+    ctx.save();
+    ctx.fillStyle = 'rgb(255, 0, 255)';
+    ctx.fillRect(300, 40, 40, 40);
+    ctx.restore();
+
+    // enemy health bar
+    var pos = { x: 320, y: 60 };
+    var color = { r: 255, g: 0, b: 0 };
+    var sAngle = -Math.PI / 2;
+    var eAngle = Math.PI * 2 * (enemy.hp / enemy.maxHp);
+    drawStrokeCircle(pos, 50, color, 1, 2, sAngle, sAngle + eAngle, false);
+  }
+};
+
 // draw bullets
 var drawBullets = function drawBullets() {
   for (var i = 0; i < bullets.length; i++) {
@@ -260,14 +310,63 @@ var drawBullets = function drawBullets() {
   }
 };
 
-/*
-  // draw text
-  const drawText = (text, x, y = 40, size = 30) => {
-    ctx.fillStyle = 'black';
-    ctx.font = `${size}px Arial`;
-    ctx.fillText(text, x, y);
-  };
+// draw text
+var drawText = function drawText(text, x) {
+  var y = arguments.length > 2 && arguments[2] !== undefined ? arguments[2] : 40;
+  var size = arguments.length > 3 && arguments[3] !== undefined ? arguments[3] : 30;
+  var color = arguments[4];
 
+  ctx.save();
+  ctx.fillStyle = color ? 'rgb(' + color.r + ', ' + color.g + ', ' + color.b + ')' : 'white';
+  ctx.font = size + 'px Arial';
+  ctx.fillText(text, x, y);
+  ctx.restore();
+};
+
+// draw Hud
+var drawHUD = function drawHUD() {
+  ctx.save();
+  ctx.fillStyle = 'black';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 541, width - 2, 98);
+  ctx.fillRect(1, 541, width - 2, 98);
+
+  // draw player stats
+  ctx.fillStyle = 'white';
+  var keys = Object.keys(players);
+  var rectWidth = width / 4 - 2;
+
+  for (var i = 0; i < keys.length; i++) {
+    var player = players[keys[i]];
+    var damageText = 'Damage: ' + player.minDamage + ' ~ ' + player.maxDamage;
+    var x = 1 + i * (width / 4);
+
+    ctx.strokeRect(x, 541, rectWidth, 98);
+    drawText(player.name, x + rectWidth / 2, 550, 18, player.color);
+    drawText(damageText, x + rectWidth / 2, 575, 12);
+
+    // draw skill icons
+    // skill 1
+    var opacity = player.energy > player.skill1Cost ? 1 : 0.5;
+    var fillStyle = 'rgba(255, 255, 255, ' + opacity + ')';
+    ctx.fillStyle = fillStyle;
+    ctx.fillRect(x + rectWidth / 4, 595, 30, 30);
+    ctx.strokeRect(x + rectWidth / 4, 595, 30, 30);
+
+    // skill 2
+    opacity = player.energy > player.skill2Cost ? 1 : 0.5;
+    fillStyle = 'rgba(255, 255, 255, ' + opacity + ')';
+    ctx.fillStyle = fillStyle;
+    ctx.fillRect(x + rectWidth / 2 + 10, 595, 30, 30);
+    ctx.strokeRect(x + rectWidth / 2 + 10, 595, 30, 30);
+  }
+  ctx.restore();
+};
+
+/*
   const checkReady = () => {
     const user = players[hash];
 
@@ -293,8 +392,10 @@ var playing = function playing(state) {
 
   updateMovement(state);
 
+  drawEnemy();
   drawPlayers();
   drawBullets();
+  drawHUD();
 };
 
 // handles the clients draw related functions
@@ -312,11 +413,11 @@ var handleDraw = function handleDraw() {
   }
 
   // prevent toggling ready each frame and placing bomb at the beginning
-  if (myKeys.keydown[myKeys.KEYBOARD.KEY_J]) {
-    previousKeyDown = true;
-  } else {
-    previousKeyDown = false;
-  }
+  prevKeyDown.KEY_W = myKeys.keydown[myKeys.KEYBOARD.KEY_W];
+  prevKeyDown.KEY_S = myKeys.keydown[myKeys.KEYBOARD.KEY_S];
+  prevKeyDown.KEY_J = myKeys.keydown[myKeys.KEYBOARD.KEY_J];
+  prevKeyDown.KEY_K = myKeys.keydown[myKeys.KEYBOARD.KEY_K];
+  prevKeyDown.KEY_L = myKeys.keydown[myKeys.KEYBOARD.KEY_L];
 
   window.requestAnimationFrame(handleDraw);
 };
@@ -339,6 +440,8 @@ var updatePlayer = function updatePlayer(users) {
       player.currentExp = updatedPlayer.currentExp;
       player.isHit = updatedPlayer.isHit;
       player.reviveTimer = updatedPlayer.reviveTimer;
+      player.skill1Used = updatedPlayer.skill1Used;
+      player.skill2Used = updatedPlayer.skill2Used;
 
       // values that should be updated if the client emited updatedPlayer
       if (player.lastUpdate < updatedPlayer.lastUpdate) {
@@ -361,6 +464,7 @@ var updatePlayer = function updatePlayer(users) {
 var handleUpdate = function handleUpdate(data) {
   roomState = data.state;
   bullets = data.bullets;
+  enemy = data.enemy;
 
   updatePlayer(data.players);
 };
@@ -406,8 +510,9 @@ var setupSocket = function setupSocket() {
   // get other clients data from server
   socket.on('initData', function (data) {
     roomState = data.state;
-    players = data.players;
-    bullets = data.bullets;
+    players = data.players || {};
+    enemy = data.enemy || {};
+    bullets = data.bullets || [];
 
     overlay.style.display = 'none';
     roomInfo.style.display = 'none';
@@ -457,8 +562,8 @@ var init = function init() {
   canvas = document.querySelector('#main');
   ctx = canvas.getContext('2d');
 
-  canvas.setAttribute('width', 640);
-  canvas.setAttribute('height', 640);
+  canvas.setAttribute('width', width);
+  canvas.setAttribute('height', height);
 
   // overlay
   username = document.querySelector('#username');

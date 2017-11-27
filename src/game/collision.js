@@ -24,6 +24,7 @@ process.on('message', (m) => {
         id: m.data.playerId,
         state: room.state,
         players: room.players,
+        enemy: room.enemy.getClientData(),
         bullets: room.bullets,
       }));
       break;
