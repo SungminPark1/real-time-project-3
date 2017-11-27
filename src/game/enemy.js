@@ -38,8 +38,10 @@ class Enemy {
     if (this.currentAttackDur % 10 === 0) {
       const pos = new Victor(320, 50);
       const vel = new Victor(utils.getRandomInt(61, -30), utils.getRandomInt(30, 41));
+      const bullet = new Bullet(pos, vel, 8);
 
-      this.bullets.push(new Bullet(pos, vel, 10));
+      bullet.setSprite(16, 0, 0, true);
+      this.bullets.push(bullet);
     }
   }
 

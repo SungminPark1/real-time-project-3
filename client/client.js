@@ -4,6 +4,11 @@ const width = 640;
 const height = 640;
 let ctx;
 
+// images
+let bullets16px;
+let bullets32px;
+let bullets64px;
+
 // overlay vars
 let username;
 let roomname;
@@ -180,10 +185,10 @@ const drawFillCircle = (pos, radius, color, opacity, startAng, endAngle, ccw) =>
   ctx.restore();
 };
 
-const drawStrokeCircle = (pos, radius, color, opacity, width, startAng, endAngle, ccw) => {
+const drawStrokeCircle = (pos, radius, color, opacity, w, startAng, endAngle, ccw) => {
   ctx.save();
   ctx.strokeStyle = `rgba(${color.r},${color.g},${color.b}, ${opacity})`;
-  ctx.lineWidth = width;
+  ctx.lineWidth = w;
   ctx.beginPath();
   ctx.arc(pos.x, pos.y, radius, startAng, endAngle, ccw);
   ctx.stroke();
@@ -295,16 +300,33 @@ const drawEnemy = () => {
 const drawBullets = () => {
   for (let i = 0; i < bullets.length; i++) {
     const bullet = bullets[i];
-    const fill = `rgba(255, 255, 255, ${!bullet.drained ? 1 : 0.5})`;
+    const sprite = bullet.sprite;
+    let x = bullet.pos.x - (sprite.type / 2);
+    let y = bullet.pos.y - (sprite.type / 2);
 
     ctx.save();
-    ctx.strokeStyle = 'black';
-    ctx.fillStyle = fill;
+    // translate and rotate bullet if sprite has angle
+    if (sprite.rotate) {
+      x = -sprite.type / 2;
+      y = -sprite.type / 2;
+
+      ctx.translate(bullet.pos.x, bullet.pos.y);
+      ctx.rotate(sprite.angle);
+    }
+    ctx.globalAlpha = !bullet.drained ? 1 : 0.5;
+    ctx.drawImage(
+      bullets16px,
+      sprite.x * 16, sprite.y * 16, sprite.type, sprite.type,
+      x, y, sprite.type, sprite.type
+    );
+    ctx.restore();
+
+    // see hitbox
+    ctx.save();
+    ctx.strokeStyle = 'white';
     ctx.beginPath();
     ctx.arc(bullet.pos.x, bullet.pos.y, bullet.radius, 0, Math.PI * 2, false);
-    ctx.fill();
     ctx.stroke();
-    ctx.closePath();
     ctx.restore();
   }
 };
@@ -559,6 +581,11 @@ const init = () => {
 
   canvas.setAttribute('width', width);
   canvas.setAttribute('height', height);
+
+  // images
+  bullets16px = document.querySelector('#bullets16px');
+  bullets32px = document.querySelector('#bullets32px');
+  bullets64px = document.querySelector('#bullets64px');
 
   // overlay
   username = document.querySelector('#username');

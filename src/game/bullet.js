@@ -2,14 +2,79 @@ const Victor = require('victor');
 const utils = require('../utils.js');
 
 class Bullet {
-  constructor(pos = { x: 0, y: 0 }, vel = { x: 0, y: 0 }, radius) {
+  constructor(pos = { x: 0, y: 0 }, vel = { x: 0, y: 0 },) {
     this.pos = new Victor(pos.x, pos.y);
     // this.prevPos = { ...this.pos };
     // this.destPos = { ...this.pos };
     this.velocity = new Victor(vel.x, vel.y);
-    this.radius = radius;
+    this.radius = 8; // default
     this.drained = false;
     this.active = true;
+
+    this.sprite = {
+      type: 16,
+      x: utils.getRandomInt(16),
+      y: 0,
+      rotate: true,
+      staticRotate: false,
+      angle: this.velocity.verticalAngle(),
+    };
+  }
+
+  // radius is adjusted based on sprite
+  setSprite(type, x, y, randX = false) {
+    const sprite = {
+      type,
+      x,
+      y,
+      rotate: false,
+      staticRotate: false,
+      angle: 0,
+    };
+
+    if (type === 16) {
+      if (randX) {
+        sprite.x = utils.getRandomInt(16);
+      }
+      if (y === 0) {
+        sprite.rotate = true;
+        sprite.angle = Math.PI - this.velocity.verticalAngle();
+        this.radius = 6;
+      } else if (y === 3) {
+        sprite.rotate = true;
+        sprite.angle = Math.PI - this.velocity.verticalAngle();
+        this.radius = 7;
+      } else if (y === 4) {
+        sprite.rotate = true;
+        sprite.angle = Math.PI - this.velocity.verticalAngle();
+        this.radius = 7;
+      } else if (y === 5) {
+        sprite.rotate = true;
+        sprite.angle = Math.PI - this.velocity.verticalAngle();
+        this.radius = 7;
+      } else if (y === 6) {
+        sprite.rotate = true;
+        sprite.angle = Math.PI - this.velocity.verticalAngle();
+        this.radius = 7;
+      } else if (y === 7) {
+        sprite.rotate = true;
+        sprite.angle = Math.PI - this.velocity.verticalAngle();
+        this.radius = 7;
+      } else if (y === 8) {
+        sprite.rotate = true;
+        sprite.staticRotate = true;
+      }
+    } else if (type === 32) {
+      if (randX) {
+        sprite.x = utils.getRandomInt(8);
+      }
+    } else if (type === 62) {
+      if (randX) {
+        sprite.x = utils.getRandomInt(4);
+      }
+    }
+
+    this.sprite = sprite;
   }
 
   // checks if bomb should be marked to remove

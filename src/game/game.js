@@ -280,6 +280,7 @@ class Game {
       pos: bullet.pos,
       radius: bullet.radius,
       drained: bullet.drained,
+      sprite: bullet.sprite,
     }));
 
     // this.state = keys.length === deadPlayers ? GAME_PREPARING : this.state;
