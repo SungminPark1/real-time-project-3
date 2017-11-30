@@ -20,7 +20,6 @@ class Fighter extends Player {
 
     this.energy = 0;
     this.maxEnergy = 20;
-    this.capEnergy = 50;
 
     this.hitbox = 25;
     this.capHitbox = 12;

@@ -32,7 +32,8 @@ var roomState = 'preparing';
 var players = {};
 var enemy = {};
 var bullets = [];
-// let skills = [];
+// let bgSkills = [];
+var fgSkills = [];
 
 // player related vars
 var updated = false;
@@ -315,7 +316,11 @@ var drawBullets = function drawBullets() {
       ctx.rotate(sprite.angle);
     }
     ctx.globalAlpha = !bullet.drained ? 1 : 0.5;
-    ctx.drawImage(bullets16px, sprite.x * 16, sprite.y * 16, sprite.type, sprite.type, x, y, sprite.type, sprite.type);
+    if (sprite.type === 16) {
+      ctx.drawImage(bullets16px, sprite.x * 16, sprite.y * 16, sprite.type, sprite.type, x, y, sprite.type, sprite.type);
+    } else if (sprite.type === 32) {
+      ctx.drawImage(bullets32px, sprite.x * 32, sprite.y * 32, sprite.type, sprite.type, x, y, sprite.type, sprite.type);
+    }
     ctx.restore();
 
     // see hitbox
@@ -547,6 +552,10 @@ var setupSocket = function setupSocket() {
   socket.on('levelPlayer', levelPlayer);
 
   socket.on('playerIsAlive', playerIsAlive);
+
+  socket.on('playerAttacking', function () {
+    console.log('attacked');
+  });
 
   // socket.on('skillUsed', handleSkill);
 

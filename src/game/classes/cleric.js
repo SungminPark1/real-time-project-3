@@ -54,7 +54,7 @@ class Cleric extends Player {
     this.skill2Name = 'Hp Regen';
     this.skill2Cost = 0.1;
     this.hpRegen = 0.02;
-    this.capHpRegen = .5;
+    this.capHpRegen = 0.5;
     this.skill2Used = false;
   }
 

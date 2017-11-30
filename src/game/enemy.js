@@ -1,12 +1,8 @@
-const Victor = require('victor');
-const Bullet = require('./bullet.js');
-const utils = require('../utils.js');
-
 class Enemy {
-  constructor(level) {
+  constructor() {
     this.pos = { x: 320, y: 60 };
-    this.hp = 305 + (25 * level);
-    this.maxHp = 305 + (25 * level);
+    this.hp = 100;
+    this.maxHp = 100;
     this.damage = 1;
     this.difficulty = 0;
     this.emitters = [];
@@ -26,26 +22,8 @@ class Enemy {
     this.clientEmitters = [];
   }
 
-  // TO DO: pattern creates emitter -> update emitter in update ->
-  // add new bullets in emitter to bullets array -> empty emitter bullet array ->
-  // update bullets array
-  pattern1() {
-    /* TO DO: Create Emitter Class
-      if (this.currentAttackDur === this.attackDur) {
-        // TO DO: Create first emitter
-      }
-    */
-    if (this.currentAttackDur % 10 === 0) {
-      const pos = new Victor(320, 50);
-      const vel = new Victor(utils.getRandomInt(61, -30), utils.getRandomInt(30, 41));
-      const bullet = new Bullet(pos, vel, 8);
-
-      bullet.setSprite(16, 0, 0, true);
-      this.bullets.push(bullet);
-    }
-  }
-
   update(dt) {
+    // update bullets
     for (let i = 0; i < this.bullets.length; i++) {
       this.bullets[i].update(dt);
     }
@@ -53,27 +31,18 @@ class Enemy {
     // filter non-active bullets
     this.bullets = this.bullets.filter(bullet => bullet.active);
 
-    // TO DO: move this out of enemy and into specific enemy with set patterns
-    // if resting is less 0 - enemy is attacking
-    if (this.currentRestDur <= 0) {
-      // update pattern
-      if (this.attackPattern === 0) {
-        this.pattern1();
-      }
+    // update emitters
+    for (let i = 0; i < this.emitters.length; i++) {
+      const emitter = this.emitters[i];
 
-      this.currentAttackDur--;
-
-      // check if it should go into rest and then start another attack
-      if (this.currentAttackDur <= 0) {
-        this.currentAttackDur = this.attackDur;
-        this.currentRestDur = this.restDur;
-
-        // TO DO: update int value to match # of patterns
-        // this.attackPattern = utils.getRandomInt(1);
-      }
-    } else {
-      this.currentRestDur--;
+      // update emitter, add emitter bullets to enemy bullets, clear emitter bullets
+      emitter.update(dt);
+      this.bullets = this.bullets.concat(emitter.bullets);
+      emitter.bullets = [];
     }
+
+    // filter emitters
+    this.emitters = this.emitters.filter(emitter => emitter.active);
   }
 
   getClientData() {

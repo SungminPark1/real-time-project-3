@@ -1,10 +1,14 @@
+const Message = require('../message.js');
+const utils = require('../utils.js');
+
+// Player Classes
 const Fighter = require('./classes/fighter.js');
 const Bomber = require('./classes/bomber.js');
 const Aura = require('./classes/aura.js');
 const Cleric = require('./classes/cleric.js');
-const Enemy = require('./enemy.js');
-const Message = require('../message.js');
-const utils = require('../utils.js');
+
+// Enemies
+const Test = require('./enemies/test.js');
 
 const GAME_PREPARING = 'preparing';
 const GAME_PLAYING = 'playing';
@@ -17,7 +21,7 @@ class Game {
     this.dt = 0;
 
     this.players = {};
-    this.enemy = new Enemy(1);
+    this.enemy = new Test(1, 1);
     this.bullets = []; // bullets are in enemy object - only has pos, radius, and drained value?
 
     // only nessesary data to set each update
@@ -203,7 +207,7 @@ class Game {
       // create new enemy
       // TO DO: pick random enemy type and str depends on player level
       this.bullets = [];
-      this.enemy = new Enemy(1);
+      this.enemy = new Test(1, 1);
     } else {
       this.enemy.update(this.dt);
 
@@ -236,6 +240,9 @@ class Game {
             player.currentAttRate = player.attRate;
 
             // TO DO: ADD emit to rpc attack animation if attacking is true
+            process.send(new Message('playerAttacking', {
+              pos: this.enemy.pos,
+            }));
           }
           // check skill used
           if (player.skill1Used) {
@@ -283,6 +290,7 @@ class Game {
       sprite: bullet.sprite,
     }));
 
+    this.tempErrorFixer = deadPlayers;
     // this.state = keys.length === deadPlayers ? GAME_PREPARING : this.state;
 
     // emit updated info back
