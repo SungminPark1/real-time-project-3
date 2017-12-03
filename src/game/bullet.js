@@ -78,7 +78,7 @@ class Bullet {
         sprite.staticRotate = true;
         sprite.angle = 0;
         sprite.degree = 0;
-        this.radius = 14;
+        this.radius = 12;
       }
     } else if (type === 62) {
       if (randX) {

@@ -23,8 +23,8 @@ class Star extends Enemy {
   // spread (shotgun)
   pattern0() {
     if (this.currentAttackDur === this.attackDur) {
-      const emitter = new Emitter(this.pos, { x: 50, y: 50 }, 20);
-      emitter.addSpread(90, 3, true);
+      const emitter = new Emitter(this.pos, { x: 50, y: 0 }, 20);
+      emitter.addSpread(180, 4, true);
 
       this.emitters.push(emitter);
     }

@@ -60,7 +60,7 @@ class Bomber extends Player {
 
   // clear bombs in x2 radius and deal max damage?
   skill1(enemy, players, bullets) {
-    if (this.energy > this.skill1Cost) {
+    if (this.energy >= this.skill1Cost) {
       const boss = enemy;
       let enemyBullets = bullets;
 
@@ -85,7 +85,7 @@ class Bomber extends Player {
 
   // chance to clear bullets whole screen
   skill2(enemy, players, bullets) {
-    if (this.energy > this.skill2Cost) {
+    if (this.energy >= this.skill2Cost) {
       const boss = enemy;
       let enemyBullets = bullets;
 

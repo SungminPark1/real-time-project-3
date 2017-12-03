@@ -10,6 +10,14 @@ var ctx = void 0;
 var bullets16px = void 0;
 var bullets32px = void 0;
 var bullets64px = void 0;
+var normalImage = void 0; // normal attack
+var criticalImage = void 0; // critcal attack
+var finalStrikeImage = void 0; // fighter skill 1
+var fullForceImage = void 0; // fighter skill 2
+var smiteImage = void 0; // cleric skill 1
+var hpRegenImage = void 0; // cleric skill 2
+var fireballImage = void 0; // aura skill 1
+var fireStormImage = void 0; // aura skill 2
 
 // overlay vars
 var username = void 0;
@@ -32,8 +40,7 @@ var roomState = 'preparing';
 var players = {};
 var enemy = {};
 var bullets = [];
-// let bgSkills = [];
-var fgSkills = [];
+var skills = [];
 
 // player related vars
 var updated = false;
@@ -98,6 +105,193 @@ var getRandomUnitVector = function getRandomUnitVector() {
   }
 
   return { x: x, y: y };
+};
+
+var updateSkills = function updateSkills() {
+  for (var i = 0; i < skills.length; i++) {
+    var skill = skills[i];
+
+    skill.frame++;
+
+    if (skill.frame > 6) {
+      skill.frame = 0;
+      skill.currentSprite++;
+
+      // if currentSprite is greater - set active to false
+      if (skill.currentSprite > skill.sprites) {
+        console.log('hit');
+        skill.active = false;
+      }
+
+      // max x is 4 set back to 0 and increase y
+      if (skill.imagePos.x >= 4) {
+        skill.imagePos.x = 0;
+        skill.imagePos.y++;
+      } else {
+        skill.imagePos.x++;
+      }
+    }
+  }
+
+  skills = skills.filter(function (skill) {
+    return skill.active;
+  });
+};
+
+// all skills are 192 x 192
+var drawSkills = function drawSkills() {
+  for (var i = 0; i < skills.length; i++) {
+    var skill = skills[i];
+
+    ctx.save();
+    if (skill.image) {
+      ctx.drawImage(skill.image, skill.imagePos.x * 192, skill.imagePos.y * 192, 192, 192, skill.pos.x - skill.size / 2, skill.pos.y - skill.size / 2, skill.size, skill.size);
+    }
+    ctx.restore();
+  }
+};
+
+// show something when skill is used
+var handleSkill = function handleSkill(type, data) {
+  var skill = {
+    active: false
+  };
+
+  if (type === 'normalAttack') {
+    skill = {
+      type: type,
+      pos: data.pos,
+      size: 100,
+      image: normalImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 7,
+      active: true
+    };
+  } else if (type === 'critcalAttack') {
+    skill = {
+      type: type,
+      pos: data.pos,
+      size: 100,
+      image: criticalImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 11,
+      active: true
+    };
+  } else if (type === 'Final Strike') {
+    skill = {
+      type: type,
+      pos: data.pos,
+      size: 100,
+      image: finalStrikeImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 7,
+      active: true
+    };
+  } else if (type === 'Full Force') {
+    skill = {
+      type: type,
+      pos: data.pos,
+      size: 100,
+      image: fullForceImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 8,
+      active: true
+    };
+  } else if (type === 'Smite') {
+    skill = {
+      type: type,
+      pos: data.pos,
+      size: 125,
+      image: smiteImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 7,
+      active: true
+    };
+  } else if (type === 'Hp Regen') {
+    // TO DO
+    // find a way to limit fire rate (skill is active until toggled off or player runs out of mp)
+    // need to push to each player location
+    /*
+      skill = {
+        type,
+        pos: data.pos,
+        size: 100,
+        image: hpRegenImage,
+        imagePos: {
+          x: 0,
+          y: 0,
+        },
+        frame: 0,
+        currentSprite: 0,
+        sprites: 20,
+        active: true,
+      };
+    */
+  } else if (type === 'Fireball') {
+    var player = players[hash];
+    var size = (player.hitbox + player.graze + 25) * 2;
+
+    skill = {
+      type: type,
+      pos: data.pos,
+      size: size,
+      image: fireballImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 15,
+      active: true
+    };
+  } else if (type === 'Fire Storm') {
+    // TO DO
+    // find a way to limit fire rate (skill is active until toggled off or player runs out of mp)
+    /*
+      skill = {
+        type,
+        pos: data.pos,
+        size: 100,
+        image: fireStormImage,
+        imagePos: {
+          x: 0,
+          y: 0,
+        },
+        frame: 0,
+        currentSprite: 0,
+        sprites: 12,
+        active: true,
+      };
+    */
+  }
+
+  skills.push(skill);
 };
 
 var updateMovement = function updateMovement(state) {
@@ -284,17 +478,21 @@ var drawPlayers = function drawPlayers() {
 var drawEnemy = function drawEnemy() {
   // check if enemy exist remove later when enemy build is all set up ?
   if (enemy) {
+    var _enemy = enemy,
+        pos = _enemy.pos,
+        size = _enemy.size;
+
     ctx.save();
     ctx.fillStyle = 'rgb(255, 0, 255)';
-    ctx.fillRect(300, 40, 40, 40);
+    ctx.fillRect(pos.x - size.width / 2, pos.y - size.width / 2, size.width, size.height);
     ctx.restore();
 
     // enemy health bar
-    var pos = { x: 320, y: 60 };
+    var radius = Math.round((size.width + size.height) / 2) + 10;
     var color = { r: 255, g: 0, b: 0 };
     var sAngle = -Math.PI / 2;
     var eAngle = Math.PI * 2 * (enemy.hp / enemy.maxHp);
-    drawStrokeCircle(pos, 50, color, 1, 2, sAngle, sAngle + eAngle, false);
+    drawStrokeCircle(pos, radius, color, 1, 2, sAngle, sAngle + eAngle, false);
   }
 };
 
@@ -324,12 +522,14 @@ var drawBullets = function drawBullets() {
     ctx.restore();
 
     // see hitbox
-    ctx.save();
-    ctx.strokeStyle = 'white';
-    ctx.beginPath();
-    ctx.arc(bullet.pos.x, bullet.pos.y, bullet.radius, 0, Math.PI * 2, false);
-    ctx.stroke();
-    ctx.restore();
+    /*
+      ctx.save();
+      ctx.strokeStyle = 'white';
+      ctx.beginPath();
+      ctx.arc(bullet.pos.x, bullet.pos.y, bullet.radius, 0, Math.PI * 2, false);
+      ctx.stroke();
+      ctx.restore();
+    */
   }
 };
 
@@ -414,9 +614,11 @@ var playing = function playing(state) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
   updateMovement(state);
+  updateSkills();
 
   drawEnemy();
   drawPlayers();
+  drawSkills();
   drawBullets();
   drawHUD();
 };
@@ -553,11 +755,17 @@ var setupSocket = function setupSocket() {
 
   socket.on('playerIsAlive', playerIsAlive);
 
-  socket.on('playerAttacking', function () {
-    console.log('attacked');
+  socket.on('playerAttacking', function (data) {
+    if (data.isCritcal) {
+      handleSkill('critcalAttack', data);
+    } else {
+      handleSkill('normalAttack', data);
+    }
   });
 
-  // socket.on('skillUsed', handleSkill);
+  socket.on('playerUsedSkill', function (data) {
+    handleSkill(data.skillName, data);
+  });
 
   socket.on('playerReady', function (data) {
     var player = players[data.hash];
@@ -596,6 +804,14 @@ var init = function init() {
   bullets16px = document.querySelector('#bullets16px');
   bullets32px = document.querySelector('#bullets32px');
   bullets64px = document.querySelector('#bullets64px');
+  normalImage = document.querySelector('#normal');
+  criticalImage = document.querySelector('#critical');
+  finalStrikeImage = document.querySelector('#finalStrike');
+  fullForceImage = document.querySelector('#fullForce');
+  smiteImage = document.querySelector('#smite');
+  hpRegenImage = document.querySelector('#hpRegen');
+  fireballImage = document.querySelector('#fireball');
+  fireStormImage = document.querySelector('#fireStorm');
 
   // overlay
   username = document.querySelector('#username');

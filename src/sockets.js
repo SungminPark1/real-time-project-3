@@ -118,10 +118,13 @@ const onUpdatePlayer = (sock) => {
     const room = gameRooms[socket.room];
 
     // send updated position to child process update
-    room.update.send(new Message('updatePlayer', {
-      playerHash: socket.hash,
-      player: user,
-    }));
+    // only send if room exist
+    if (room) {
+      room.update.send(new Message('updatePlayer', {
+        playerHash: socket.hash,
+        player: user,
+      }));
+    }
   });
 };
 

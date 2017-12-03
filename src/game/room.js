@@ -67,6 +67,10 @@ class Room {
           io.sockets.in(this.room).emit('playerAttacking', m.data);
           break;
         }
+        case 'playerUsedSkill': {
+          io.sockets.in(this.room).emit('playerUsedSkill', m.data);
+          break;
+        }
         case 'updateRoom': {
           // TO DO
           // update main server values

@@ -31,7 +31,7 @@ class Game {
   }
 
   addPlayer(user) {
-    this.players[user.hash] = new Fighter(user);
+    this.players[user.hash] = new Aura(user);
     this.clientPlayers[user.hash] = this.players[user.hash].getClientData();
   }
 
@@ -249,11 +249,21 @@ class Game {
             player.skill1(this.enemy, this.players, this.bullets);
 
             // TO DO: ADD emit to rpc attack animation if attacking is true
+            process.send(new Message('playerUsedSkill', {
+              hash: player.hash,
+              skillName: player.skill1Name,
+              pos: this.enemy.pos,
+            }));
           }
           if (player.skill2Used) {
             player.skill2(this.enemy, this.players, this.bullets);
 
             // TO DO: ADD emit to rpc attack animation if attacking is true
+            process.send(new Message('playerUsedSkill', {
+              hash: player.hash,
+              skillName: player.skill2Name,
+              pos: this.enemy.pos,
+            }));
           }
         } else {
           deadPlayers++;

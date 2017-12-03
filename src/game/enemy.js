@@ -1,6 +1,7 @@
 class Enemy {
   constructor() {
-    this.pos = { x: 320, y: 60 };
+    this.pos = { x: 320, y: 60 }; // center point
+    this.size = { width: 40, height: 40 };
     this.hp = 100;
     this.maxHp = 100;
     this.damage = 1;
@@ -46,9 +47,9 @@ class Enemy {
   }
 
   getClientData() {
-    const { hp, maxHp, damage } = this;
+    const { pos, size, hp, maxHp, damage } = this;
 
-    return { hp, maxHp, damage };
+    return { pos, size, hp, maxHp, damage };
   }
 }
 

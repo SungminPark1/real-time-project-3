@@ -61,7 +61,7 @@ class Cleric extends Player {
   // Smite
   // damage based on bosses hp, min damage is player's min damage
   skill1(enemy) {
-    if (this.energy > this.skill1Cost) {
+    if (this.energy >= this.skill1Cost) {
       const boss = enemy;
       boss.hp -= Math.max(this.minDamage, boss.hp * this.smiteDmg);
 
@@ -72,7 +72,7 @@ class Cleric extends Player {
 
   // Hp Regen
   skill2(enemy, players) {
-    if (this.energy > this.skill2Cost) {
+    if (this.energy >= this.skill2Cost) {
       const keys = Object.keys(players);
 
       for (let i = 0; i < keys.length; i++) {

@@ -56,7 +56,7 @@ class Fighter extends Player {
 
   // Final Strike
   skill1(enemy) {
-    if (this.energy > this.skill1Cost) {
+    if (this.energy >= this.skill1Cost) {
       const boss = enemy;
       boss.hp -= this.minDamage;
 
@@ -72,9 +72,9 @@ class Fighter extends Player {
 
   // Full Force
   skill2(enemy) {
-    if (this.energy > this.skill2Cost) {
+    if (this.energy >= this.skill2Cost) {
       const boss = enemy;
-      boss.hp -= (this.maxDamage + this.energy) * (this.energy / 7.5);
+      boss.hp -= (this.maxDamage + (this.energy / 2)) * (this.energy / 7.5);
 
       // killing the enemy removes healing from enemy kill
       if (boss.hp <= 0) {

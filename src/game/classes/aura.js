@@ -51,7 +51,7 @@ class Aura extends Player {
     this.currentExp = 0;
     this.exp = 10;
 
-    this.skill1Name = 'Fire Ball';
+    this.skill1Name = 'Fireball';
     this.skill1Cost = 15;
     this.skill1Used = false;
 
@@ -61,9 +61,9 @@ class Aura extends Player {
     this.skill2Used = false;
   }
 
-  // Fire Ball
+  // Fireball
   skill1(enemy, players, bullets) {
-    if (this.energy > this.skill1Cost) {
+    if (this.energy >= this.skill1Cost) {
       const boss = enemy;
       let enemyBullets = bullets;
 
@@ -78,7 +78,7 @@ class Aura extends Player {
 
       enemyBullets = enemyBullets.filter(bullet => bullet.active);
 
-      boss.hp -= this.minDamage * (this.energy / 5);
+      boss.hp -= this.minDamage * (this.energy / 10);
       this.energy -= this.skill1Cost;
     }
     this.skill1Used = false;
@@ -86,7 +86,7 @@ class Aura extends Player {
 
   // Fire Storm - remains active until out of energy or player cancels
   skill2(enemy) {
-    if (this.energy > this.skill2Cost) {
+    if (this.energy >= this.skill2Cost) {
       const boss = enemy;
 
       boss.hp -= this.skill2DoT;
