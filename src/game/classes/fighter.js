@@ -22,10 +22,10 @@ class Fighter extends Player {
     this.maxEnergy = 20;
 
     this.hitbox = 25;
-    this.capHitbox = 12;
+    this.capHitbox = 10;
 
-    this.graze = 15;
-    this.capGraze = 35;
+    this.graze = 20;
+    this.capGraze = 50;
 
     this.currentAttRate = 10; // change to tick rate?
     this.attRate = 10;
@@ -34,7 +34,7 @@ class Fighter extends Player {
     this.maxDamage = 3;
     this.minDamage = 1;
 
-    this.speed = 100;
+    this.speed = 80;
     this.capSpeed = 200;
 
     this.isHit = false;
@@ -87,7 +87,7 @@ class Fighter extends Player {
   }
 
   levelUp() {
-    // 18 stars
+    // 16 stars
     this.level++;
 
     this.maxHp += 4; // 2 star
@@ -95,7 +95,7 @@ class Fighter extends Player {
 
     this.maxEnergy += 1; // 1 star
 
-    this.hitbox = Math.max((this.hitbox - 0.5), this.capHitbox); // 1 star
+    this.hitbox = Math.max((this.hitbox - 0.5), this.capHitbox);
 
     this.graze = Math.min((this.graze + 0.5), this.capGraze); // 1 star
 
@@ -104,9 +104,9 @@ class Fighter extends Player {
     this.maxDamage += 4; // 3 star
     this.minDamage += 3; // 3 star
 
-    this.speed = Math.min((this.speed + 5), this.capSpeed); // 2 star
+    this.speed = Math.min((this.speed + 3), this.capSpeed); // 2 star
 
-    this.invul = Math.min((this.invul + 0.1), this.capInvul); // 2 star
+    this.invul = Math.min((this.invul + 0.05), this.capInvul); // 1 star
 
     this.currentExp = 0;
     this.exp += 5;

@@ -16,7 +16,7 @@ const GAME_PLAYING = 'playing';
 class Game {
   constructor(data) {
     this.room = data;
-    this.state = GAME_PLAYING; // cycle: preparing -> started -> restarting -> (loop)
+    this.state = GAME_PREPARING; // cycle: preparing -> started -> restarting -> (loop)
     this.lastUpdate = new Date().getTime();
     this.dt = 0;
 
@@ -31,7 +31,7 @@ class Game {
   }
 
   addPlayer(user) {
-    this.players[user.hash] = new Aura(user);
+    this.players[user.hash] = new Fighter(user);
     this.clientPlayers[user.hash] = this.players[user.hash].getClientData();
   }
 
@@ -44,7 +44,7 @@ class Game {
 
     for (let i = 0; i < keys.length; i++) {
       let color = {};
-      let player = this.players[keys[i]];
+      const player = this.players[keys[i]];
 
       // set player color
       if (i === 0) {
@@ -84,15 +84,15 @@ class Game {
 
       // set character class default to fighter
       if (player.type === 'fighter') {
-        player = new Fighter(user, pos, color);
+        this.players[player.hash] = new Fighter(user, pos, color);
       } else if (player.type === 'bomber') {
-        player = new Bomber(user, pos, color);
-      } else if (player.type === 'aura') {
-        player = new Aura(user, pos, color);
+        this.players[player.hash] = new Bomber(user, pos, color);
       } else if (player.type === 'cleric') {
-        player = new Cleric(user, pos, color);
+        this.players[player.hash] = new Cleric(user, pos, color);
+      } else if (player.type === 'aura') {
+        this.players[player.hash] = new Aura(user, pos, color);
       } else {
-        player = new Fighter(user, pos, color);
+        this.players[player.hash] = new Fighter(user, pos, color);
       }
     }
   }
@@ -170,11 +170,20 @@ class Game {
       if (player.ready) {
         readyPlayers++;
       }
-
-      this.clientPlayers[keys[i]] = player.getClientData();
     }
 
-    this.state = keys.length === readyPlayers ? GAME_PLAYING : this.state;
+    // if all players ready emit new room info emit updated info back
+    if (keys.length === readyPlayers) {
+      this.state = GAME_PLAYING;
+      this.setupGame();
+
+      process.send(new Message('startGame', {
+        state: this.state,
+        players: this.players,
+        enemy: this.enemy.getClientData(),
+        bullets: this.clientBullets,
+      }));
+    }
   }
 
   // update enemy, checks collision, checks if players are dead

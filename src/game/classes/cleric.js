@@ -21,11 +21,11 @@ class Cleric extends Player {
     this.energy = 0;
     this.maxEnergy = 20;
 
-    this.hitbox = 23;
+    this.hitbox = 25;
     this.capHitbox = 10;
 
-    this.graze = 15;
-    this.capGraze = 35;
+    this.graze = 20;
+    this.capGraze = 50;
 
     this.currentAttRate = 10; // change to tick rate?
     this.attRate = 10;
@@ -34,7 +34,7 @@ class Cleric extends Player {
     this.maxDamage = 3;
     this.minDamage = 1;
 
-    this.speed = 75;
+    this.speed = 80;
     this.capSpeed = 200;
 
     this.isHit = false;
@@ -96,7 +96,7 @@ class Cleric extends Player {
 
     this.maxEnergy += 2; // 2 star
 
-    this.hitbox = Math.max((this.hitbox - 0.5), this.capHitbox); // 1 star
+    this.hitbox = Math.max((this.hitbox - 0.5), this.capHitbox);
 
     this.graze = Math.min((this.graze + 1), this.capGraze); // 2 star
 
@@ -105,9 +105,9 @@ class Cleric extends Player {
     this.maxDamage += 4; // 3 star
     this.minDamage += 1; // 1 star
 
-    this.speed = Math.min((this.speed + 2.5), this.capSpeed); // 1 star
+    this.speed = Math.min((this.speed + 2), this.capSpeed); // 1 star
 
-    this.invul = Math.min((this.invul + 0.05), this.capInvul); // 1 star
+    this.invul = Math.min((this.invul + 0.1), this.capInvul); // 2 star
 
     this.smiteDmg = Math.min(this.smiteDmg + 0.02, this.capSmiteDmg);
 

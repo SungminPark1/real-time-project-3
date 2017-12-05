@@ -23,7 +23,7 @@ class Star extends Enemy {
   // spread (shotgun)
   pattern0() {
     if (this.currentAttackDur === this.attackDur) {
-      const emitter = new Emitter(this.pos, { x: 50, y: 0 }, 20);
+      const emitter = new Emitter(this.pos, { x: 60, y: 0 }, 20);
       emitter.addSpread(180, 4, true);
 
       this.emitters.push(emitter);
@@ -45,14 +45,14 @@ class Star extends Enemy {
     if (this.currentAttackDur === this.attackDur) {
       const emitter = new Emitter(this.pos, { x: -50, y: -50 }, 20);
       emitter.addSpread(90, 3);
-      emitter.addSpin(1);
+      emitter.addSpin(2);
       emitter.setBulletSprite(32, 0, 1, true);
 
       this.emitters.push(emitter);
 
       const emitter2 = new Emitter(this.pos, { x: 75, y: 75 }, 10);
       emitter2.addSpread(90, 3);
-      emitter2.addSpin(-1);
+      emitter2.addSpin(-2);
       emitter2.setBulletSprite(16, 0, 0, true);
 
       this.emitters.push(emitter2);
@@ -88,12 +88,11 @@ class Star extends Enemy {
   }
 
   // spin + bullet curve
-  // NOT A GOOD COMBO
+  // interesting but hard to control
   pattern5() {
     if (this.currentAttackDur === this.attackDur) {
       const emitter = new Emitter(this.pos, { x: 0, y: 100 }, 10);
-      // emitter.addBulletCurve(0.5);
-      emitter.addSpin(1, 0, { max: 30, min: -30 }, true);
+      emitter.addSpin(1, 0, { max: 40, min: -40 }, true);
       emitter.addBulletCurve(1, { max: 30, min: -30 }, true);
       emitter.setBulletSprite(16, 0, 0, true);
 
@@ -138,6 +137,7 @@ class Star extends Enemy {
     }
   }
 
+  // add reversal effect to velocity
   // velocity + spin + bullet accel
   pattern8() {
     if (this.currentAttackDur === this.attackDur) {

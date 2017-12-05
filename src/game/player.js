@@ -1,4 +1,5 @@
-// clean up code
+const Message = require('../message.js');
+
 class Player {
   constructor(user) {
     this.hash = user.hash;
@@ -105,7 +106,23 @@ class Player {
     return { maxHp, maxEnergy, maxDamage, minDamage, attRate, exp, hitbox, graze };
   }
 
-  update(user) {
+  updatePreparing(user) {
+    this.lastUpdate = new Date().getTime();
+
+    this.type = user.type;
+
+    if (user.toggleReady) {
+      this.ready = !this.ready;
+    }
+
+    process.send(new Message('playerPreparing', {
+      hash: this.hash,
+      type: this.type,
+      ready: this.ready,
+    }));
+  }
+
+  updatePlaying(user) {
     this.lastUpdate = new Date().getTime();
 
     this.pos = user.pos;
@@ -121,10 +138,6 @@ class Player {
     if (user.toggleSkill2) {
       this.skill2Used = !this.skill2Used;
     }
-  }
-
-  toggleReady(user) {
-    this.ready = user.ready;
   }
 }
 

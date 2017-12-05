@@ -51,7 +51,11 @@ process.on('message', (m) => {
       break;
     }
     case 'updatePlayer': {
-      room.players[m.data.playerHash].update(m.data.player);
+      if (room.state === 'preparing') {
+        room.players[m.data.playerHash].updatePreparing(m.data.player);
+      } else if (room.state === 'playing') {
+        room.players[m.data.playerHash].updatePlaying(m.data.player);
+      }
       break;
     }
     default: {

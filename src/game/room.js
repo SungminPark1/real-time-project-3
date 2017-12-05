@@ -8,7 +8,7 @@ class Room {
   }
 
   startUpdate(io) {
-    this.update = child.fork('./src/game/collision.js');
+    this.update = child.fork('./src/game/child.js');
 
     this.update.on('message', (m) => {
       switch (m.type) {
@@ -59,6 +59,10 @@ class Room {
           io.sockets.in(this.room).emit('removePlayer', m.data.hash);
           break;
         }
+        case 'playerPreparing': {
+          io.sockets.in(this.room).emit('playerPreparing', m.data);
+          break;
+        }
         case 'playerIsAlive': {
           io.sockets.in(this.room).emit('playerIsAlive', m.data);
           break;
@@ -69,6 +73,10 @@ class Room {
         }
         case 'playerUsedSkill': {
           io.sockets.in(this.room).emit('playerUsedSkill', m.data);
+          break;
+        }
+        case 'startGame': {
+          io.sockets.in(this.room).emit('startGame', m.data);
           break;
         }
         case 'updateRoom': {

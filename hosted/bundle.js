@@ -294,7 +294,58 @@ var handleSkill = function handleSkill(type, data) {
   skills.push(skill);
 };
 
-var updateMovement = function updateMovement(state) {
+var updatePreparing = function updatePreparing() {
+  // clear bullet and skill array
+  updated = false;
+
+  var user = players[hash];
+  var toggleReady = false;
+
+  var checkKeyW = myKeys.keydown[myKeys.KEYBOARD.KEY_W] && !prevKeyDown.KEY_W;
+  var checkKeyS = myKeys.keydown[myKeys.KEYBOARD.KEY_S] && !prevKeyDown.KEY_S;
+  var checkKeyJ = myKeys.keydown[myKeys.KEYBOARD.KEY_J] && !prevKeyDown.KEY_J;
+
+  if (checkKeyW && !user.ready) {
+    if (user.type === 'fighter') {
+      user.type = 'aura';
+    } else if (user.type === 'bomber') {
+      user.type = 'fighter';
+    } else if (user.type === 'cleric') {
+      user.type = 'bomber';
+    } else if (user.type === 'aura') {
+      user.type = 'cleric';
+    }
+    updated = true;
+  }
+  if (checkKeyS && !user.ready) {
+    if (user.type === 'fighter') {
+      user.type = 'bomber';
+    } else if (user.type === 'bomber') {
+      user.type = 'cleric';
+    } else if (user.type === 'cleric') {
+      user.type = 'aura';
+    } else if (user.type === 'aura') {
+      user.type = 'fighter';
+    }
+    updated = true;
+  }
+
+  // check if user is ready.
+  if (checkKeyJ) {
+    toggleReady = true;
+    updated = true;
+  }
+
+  if (updated) {
+    socket.emit('updatePlayer', {
+      type: user.type,
+      toggleReady: toggleReady
+    });
+  }
+};
+
+// called in playing state
+var updatePlaying = function updatePlaying() {
   var user = players[hash];
   updated = false;
   attacking = false;
@@ -325,29 +376,26 @@ var updateMovement = function updateMovement(state) {
     updated = true;
   }
 
-  // check attack and skills
-  if (state === 'playing') {
-    var checkKeyJ = myKeys.keydown[myKeys.KEYBOARD.KEY_J] && !prevKeyDown.KEY_J;
-    var checkKeyK = myKeys.keydown[myKeys.KEYBOARD.KEY_K] && !prevKeyDown.KEY_K;
-    var checkKeyL = myKeys.keydown[myKeys.KEYBOARD.KEY_L] && !prevKeyDown.KEY_L;
+  var checkKeyJ = myKeys.keydown[myKeys.KEYBOARD.KEY_J] && !prevKeyDown.KEY_J;
+  var checkKeyK = myKeys.keydown[myKeys.KEYBOARD.KEY_K] && !prevKeyDown.KEY_K;
+  var checkKeyL = myKeys.keydown[myKeys.KEYBOARD.KEY_L] && !prevKeyDown.KEY_L;
 
-    // basic attack
-    if (checkKeyJ && user.currentAttRate <= 0) {
-      attacking = true;
-      updated = true;
-    }
+  // basic attack
+  if (checkKeyJ && user.currentAttRate <= 0) {
+    attacking = true;
+    updated = true;
+  }
 
-    // skill 1
-    if (checkKeyK && user.energy >= user.skill1Cost) {
-      toggleSkill1 = true;
-      updated = true;
-    }
+  // skill 1
+  if (checkKeyK && user.energy >= user.skill1Cost) {
+    toggleSkill1 = true;
+    updated = true;
+  }
 
-    // skill 2
-    if (checkKeyL && user.energy >= user.skill2Cost) {
-      toggleSkill2 = true;
-      updated = true;
-    }
+  // skill 2
+  if (checkKeyL && user.energy >= user.skill2Cost) {
+    toggleSkill2 = true;
+    updated = true;
   }
 
   // prevent player from going out of bound
@@ -546,12 +594,83 @@ var drawText = function drawText(text, x) {
   ctx.restore();
 };
 
-// draw Hud
-var drawHUD = function drawHUD() {
+var drawPlayersReady = function drawPlayersReady() {
   ctx.save();
-  ctx.fillStyle = 'black';
   ctx.textAlign = 'center';
   ctx.textBaseline = 'top';
+  ctx.fillStyle = 'black';
+  ctx.strokeStyle = 'white';
+  ctx.lineWidth = 2;
+  ctx.strokeRect(1, 491, width - 2, 48);
+  ctx.fillRect(1, 491, width - 2, 48);
+
+  // draw player stats
+  var keys = Object.keys(players);
+  var rectWidth = width / 4 - 2;
+
+  for (var i = 0; i < keys.length; i++) {
+    var player = players[keys[i]];
+    var x = 1 + i * (width / 4);
+
+    if (player.ready) {
+      ctx.fillStyle = 'green';
+    } else {
+      ctx.fillStyle = 'black';
+    }
+    ctx.strokeRect(x, 491, rectWidth, 48);
+    ctx.fillRect(x, 491, rectWidth, 48);
+
+    drawText(player.type, x + rectWidth / 2, 505, 18);
+  }
+  ctx.restore();
+};
+
+var drawSelectScreen = function drawSelectScreen() {
+  var user = players[hash];
+  var rectWidth = width / 4 - 2;
+  ctx.save();
+  ctx.lineWidth = 2;
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.strokeStyle = 'white';
+  ctx.strokeRect(1, 1, rectWidth, height - 102);
+
+  drawText('Classes', rectWidth / 2, 25, 30);
+
+  // show highlight on current selected class
+  ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+  if (user.type === 'fighter') {
+    ctx.fillRect(11, 120, rectWidth - 20, 68);
+  } else if (user.type === 'bomber') {
+    ctx.fillRect(11, 210, rectWidth - 20, 68);
+  } else if (user.type === 'cleric') {
+    ctx.fillRect(11, 300, rectWidth - 20, 68);
+  } else if (user.type === 'aura') {
+    ctx.fillRect(11, 390, rectWidth - 20, 68);
+  }
+
+  /// label boxes with class names
+  ctx.strokeRect(11, 120, rectWidth - 20, 68);
+  drawText('Fighter', rectWidth / 2, 140, 24);
+
+  ctx.strokeRect(11, 210, rectWidth - 20, 68);
+  drawText('Bomber', rectWidth / 2, 230, 24);
+
+  ctx.strokeRect(11, 300, rectWidth - 20, 68);
+  drawText('Cleric', rectWidth / 2, 320, 24);
+
+  ctx.strokeRect(11, 390, rectWidth - 20, 68);
+  drawText('Aura', rectWidth / 2, 410, 24);
+
+  ctx.restore();
+};
+
+// draw Hud
+var drawHUD = function drawHUD(state) {
+  ctx.save();
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'top';
+  ctx.fillStyle = 'black';
   ctx.strokeStyle = 'white';
   ctx.lineWidth = 2;
   ctx.strokeRect(1, 541, width - 2, 98);
@@ -568,7 +687,38 @@ var drawHUD = function drawHUD() {
     var x = 1 + i * (width / 4);
 
     ctx.strokeRect(x, 541, rectWidth, 98);
-    drawText(player.name, x + rectWidth / 2, 550, 18, player.color);
+    if (state === 'preparing') {
+      // temporary color for players
+      var color = void 0;
+      if (i === 0) {
+        color = {
+          r: 255,
+          g: 0,
+          b: 0
+        };
+      } else if (i === 1) {
+        color = {
+          r: 0,
+          g: 255,
+          b: 0
+        };
+      } else if (i === 2) {
+        color = {
+          r: 0,
+          g: 255,
+          b: 255
+        };
+      } else {
+        color = {
+          r: 255,
+          g: 165,
+          b: 0
+        };
+      }
+      drawText(player.name, x + rectWidth / 2, 550, 18, color);
+    } else if (state === 'playing') {
+      drawText(player.name, x + rectWidth / 2, 550, 18, player.color);
+    }
     drawText(damageText, x + rectWidth / 2, 575, 12);
 
     // draw skill icons
@@ -604,23 +754,27 @@ var drawHUD = function drawHUD() {
 
 // players can move and update ready state.
 var preparing = function preparing(state) {
-  if (state) {
-    ctx.clearRect(0, 0, canvas.width, canvas.height);
-  }
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+  updatePreparing();
+
+  drawSelectScreen();
+  drawPlayersReady();
+  drawHUD(state);
 };
 
 // players can move, place bombs and see bombs
 var playing = function playing(state) {
   ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-  updateMovement(state);
+  updatePlaying();
   updateSkills();
 
   drawEnemy();
   drawPlayers();
   drawSkills();
   drawBullets();
-  drawHUD();
+  drawHUD(state);
 };
 
 // handles the clients draw related functions
@@ -725,6 +879,19 @@ var playerIsAlive = function playerIsAlive(data) {
   player.reviveTime = data.reviveTime;
 };
 
+var roomRefresh = function roomRefresh(data) {
+  var keys = Object.keys(data);
+  roomList.innerHTML = '';
+
+  for (var i = 0; i < keys.length; i++) {
+    var room = data[keys[i]];
+    var content = '<div class="room__container"><h2>' + keys[i] + '</h2>';
+    content += '<p>State: ' + room.state + '</p><p>Player(s): ' + room.count + '</p></div>';
+
+    roomList.innerHTML += content;
+  }
+};
+
 var setupSocket = function setupSocket() {
   socket.emit('join');
 
@@ -745,6 +912,14 @@ var setupSocket = function setupSocket() {
     window.requestAnimationFrame(handleDraw);
   });
 
+  socket.on('startGame', function (data) {
+    roomState = data.state;
+    players = data.players;
+    enemy = data.enemy;
+    bullets = data.bullets;
+    skills = [];
+  });
+
   socket.on('update', handleUpdate);
 
   socket.on('addPlayer', addPlayer);
@@ -752,6 +927,13 @@ var setupSocket = function setupSocket() {
   socket.on('removePlayer', removePlayer);
 
   socket.on('levelPlayer', levelPlayer);
+
+  socket.on('playerPreparing', function (data) {
+    var player = players[data.hash];
+
+    player.type = data.type;
+    player.ready = data.ready;
+  });
 
   socket.on('playerIsAlive', playerIsAlive);
 
@@ -767,24 +949,7 @@ var setupSocket = function setupSocket() {
     handleSkill(data.skillName, data);
   });
 
-  socket.on('playerReady', function (data) {
-    var player = players[data.hash];
-
-    player.ready = data.ready;
-  });
-
-  socket.on('roomList', function (data) {
-    var keys = Object.keys(data);
-    roomList.innerHTML = '';
-
-    for (var i = 0; i < keys.length; i++) {
-      var room = data[keys[i]];
-      var content = '<div class="room__container"><h2>' + keys[i] + '</h2>';
-      content += '<p>State: ' + room.state + '</p><p>Player(s): ' + room.count + '</p></div>';
-
-      roomList.innerHTML += content;
-    }
-  });
+  socket.on('roomList', roomRefresh);
 
   socket.on('usernameError', function (data) {
     username.style.border = 'solid 1px red';
