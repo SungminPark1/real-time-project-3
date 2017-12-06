@@ -45,7 +45,6 @@ process.on('message', (m) => {
     case 'deletePlayer': {
       if (room.players[m.data.playerHash]) {
         delete room.players[m.data.playerHash];
-        console.log('deleted player child.js');
       }
 
       process.send(new Message('deletePlayer', {

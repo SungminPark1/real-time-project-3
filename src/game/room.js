@@ -1,7 +1,5 @@
 const child = require('child_process');
 
-let io;
-
 const GAME_PLAYING = 'playing';
 class Room {
   constructor(data) {
@@ -9,8 +7,7 @@ class Room {
     this.state = GAME_PLAYING; // cycle: preparing -> started -> restarting -> (loop)
   }
 
-  startUpdate(ioCopy) {
-    io = ioCopy;
+  startUpdate(io) {
     console.log(`child created: ${this.room}`);
     this.update = child.fork('./src/game/child.js');
 
@@ -60,7 +57,6 @@ class Room {
         case 'deletePlayer': {
           if (this.players[m.data.hash]) {
             delete this.players[m.data.hash];
-            console.log('deleted player room.js');
           }
 
           io.sockets.in(this.room).emit('removePlayer', m.data.hash);

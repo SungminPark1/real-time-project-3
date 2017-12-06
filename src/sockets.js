@@ -46,6 +46,10 @@ const onChangeRoom = (sock) => {
 
   socket.on('changeRoom', (data) => {
     if (!gameRooms[data.room]) {
+      // Heroku is breaking somewhere here
+      // If two players are in the lobby and a new room
+      // is created the lobby will break and the app will error
+
       socket.leave('lobby');
       socket.join(data.room);
       socket.room = data.room;
@@ -56,6 +60,7 @@ const onChangeRoom = (sock) => {
       room.startUpdate(io);
 
       // fire to create room in child process
+      console.log('fireing initData');
       room.update.send(new Message('initData', {
         room: data.room,
         playerHash: socket.hash,
