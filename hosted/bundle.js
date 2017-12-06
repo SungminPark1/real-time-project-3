@@ -306,10 +306,14 @@ var handleSkill = function handleSkill(type, data) {
 // update client's preparing state
 // handles user inputs
 var updatePreparing = function updatePreparing() {
-  // clear bullet and skill array
-  updated = false;
-
   var user = players[hash];
+
+  // dont check update if user is undefined
+  if (!user) {
+    return;
+  }
+
+  updated = false;
   var toggleReady = false;
 
   var checkKeyW = myKeys.keydown[myKeys.KEYBOARD.KEY_W] && !prevKeyDown.KEY_W;
@@ -359,6 +363,10 @@ var updatePreparing = function updatePreparing() {
 // handles user inputs
 var updatePlaying = function updatePlaying() {
   var user = players[hash];
+
+  // dont check update if user is undefined
+  if (!user) return;
+
   updated = false;
   attacking = false;
   toggleSkill1 = false;
@@ -881,6 +889,7 @@ var playerIsAlive = function playerIsAlive(data) {
 };
 
 var roomRefresh = function roomRefresh(data) {
+  console.log('got room lists');
   var keys = Object.keys(data);
   roomList.innerHTML = '';
 
@@ -897,6 +906,7 @@ var setupSocket = function setupSocket() {
   socket.emit('join');
 
   socket.on('hash', function (data) {
+    console.log('got hash ' + data.hash);
     hash = data.hash;
   });
 
