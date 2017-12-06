@@ -179,6 +179,7 @@ const onDisconnect = (sock) => {
         }
       }
     } else {
+      console.log(`lobby socket ${socket.hash} left`);
       socket.leave('lobby');
     }
   });
