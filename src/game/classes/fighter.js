@@ -25,7 +25,7 @@ class Fighter extends Player {
     this.capHitbox = 10;
 
     this.graze = 20;
-    this.capGraze = 50;
+    this.capGraze = 40;
 
     this.currentAttRate = 10; // change to tick rate?
     this.attRate = 10;
@@ -35,7 +35,7 @@ class Fighter extends Player {
     this.minDamage = 1;
 
     this.speed = 80;
-    this.capSpeed = 200;
+    this.capSpeed = 230;
 
     this.isHit = false;
     this.hit = 0; // change to tick rate?

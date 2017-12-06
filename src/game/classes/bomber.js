@@ -26,7 +26,7 @@ class Bomber extends Player {
     this.capHitbox = 10;
 
     this.graze = 20;
-    this.capGraze = 50;
+    this.capGraze = 45;
 
     this.currentAttRate = 10; // change to tick rate?
     this.attRate = 10;

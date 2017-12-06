@@ -1,3 +1,4 @@
+const Message = require('../../message.js');
 const Player = require('../player.js');
 
 class Cleric extends Player {
@@ -25,7 +26,7 @@ class Cleric extends Player {
     this.capHitbox = 10;
 
     this.graze = 20;
-    this.capGraze = 50;
+    this.capGraze = 45;
 
     this.currentAttRate = 10; // change to tick rate?
     this.attRate = 10;
@@ -56,6 +57,9 @@ class Cleric extends Player {
     this.hpRegen = 0.02;
     this.capHpRegen = 0.5;
     this.skill2Used = false;
+    this.skill2IsToggleType = true;
+    this.cooldownTime = 90;
+    this.cooldownTimer = 90;
   }
 
   // Smite
@@ -82,6 +86,19 @@ class Cleric extends Player {
       }
 
       this.energy -= 0.1;
+
+      // fire sprite at set interval
+      this.cooldownTime++;
+
+      if (this.cooldownTime >= this.cooldownTimer) {
+        process.send(new Message('playerUsedSkill', {
+          hash: this.hash,
+          skillName: this.skill2Name,
+          pos: this.pos,
+        }));
+
+        this.cooldownTime = 0;
+      }
     } else {
       this.skill2Used = false;
     }
@@ -115,6 +132,14 @@ class Cleric extends Player {
 
     this.currentExp = 0;
     this.exp += 5;
+  }
+
+  updatePlaying(user) {
+    super.updatePlaying(user);
+
+    if (user.toggleSkill2) {
+      this.cooldownTime = 90;
+    }
   }
 }
 

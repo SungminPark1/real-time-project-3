@@ -1,3 +1,4 @@
+const Message = require('../../message.js');
 const Player = require('../player.js');
 const utils = require('../../utils.js');
 
@@ -41,7 +42,7 @@ class Aura extends Player {
     this.minDamage = 1;
 
     this.speed = 80;
-    this.capSpeed = 200;
+    this.capSpeed = 260;
 
     this.isHit = false;
     this.hit = 0; // change to tick rate?
@@ -59,6 +60,9 @@ class Aura extends Player {
     this.skill2DoT = 0.1;
     this.skill2Cost = 0.1;
     this.skill2Used = false;
+    this.skill2IsToggleType = true;
+    this.cooldownTime = 50;
+    this.cooldownTimer = 50;
   }
 
   // Fireball
@@ -91,6 +95,19 @@ class Aura extends Player {
 
       boss.hp -= this.skill2DoT;
       this.energy -= 0.1;
+
+      // fire sprite at set interval
+      this.cooldownTime++;
+
+      if (this.cooldownTime >= this.cooldownTimer) {
+        process.send(new Message('playerUsedSkill', {
+          hash: this.hash,
+          skillName: this.skill2Name,
+          pos: enemy.pos,
+        }));
+
+        this.cooldownTime = 0;
+      }
     } else {
       this.skill2Used = false;
     }
@@ -122,6 +139,14 @@ class Aura extends Player {
 
     this.currentExp = 0;
     this.exp += 5;
+  }
+
+  updatePlaying(user) {
+    super.updatePlaying(user);
+
+    if (user.toggleSkill2) {
+      this.cooldownTime = 50;
+    }
   }
 }
 

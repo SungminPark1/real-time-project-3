@@ -257,7 +257,6 @@ class Game {
           if (player.skill1Used) {
             player.skill1(this.enemy, this.players, this.bullets);
 
-            // TO DO: ADD emit to rpc attack animation if attacking is true
             process.send(new Message('playerUsedSkill', {
               hash: player.hash,
               skillName: player.skill1Name,
@@ -267,12 +266,14 @@ class Game {
           if (player.skill2Used) {
             player.skill2(this.enemy, this.players, this.bullets);
 
-            // TO DO: ADD emit to rpc attack animation if attacking is true
-            process.send(new Message('playerUsedSkill', {
-              hash: player.hash,
-              skillName: player.skill2Name,
-              pos: this.enemy.pos,
-            }));
+            // do not run if its a toggle type skill
+            if (!player.skill2IsToggleType) {
+              process.send(new Message('playerUsedSkill', {
+                hash: player.hash,
+                skillName: player.skill2Name,
+                pos: this.enemy.pos,
+              }));
+            }
           }
         } else {
           deadPlayers++;

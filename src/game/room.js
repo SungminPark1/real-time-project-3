@@ -54,7 +54,9 @@ class Room {
           break;
         }
         case 'deletePlayer': {
-          delete this.players[m.data.hash];
+          if (this.players[m.data.hash]) {
+            delete this.players[m.data.hash];
+          }
 
           io.sockets.in(this.room).emit('removePlayer', m.data.hash);
           break;

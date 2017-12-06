@@ -13,6 +13,8 @@ const onJoin = (sock) => {
   socket.on('join', () => {
     const hash = xxh.h32(`${socket.id}${new Date().getTime()}`, 0xCAFEBABE).toString(16);
 
+    console.log(`new player: ${hash}`);
+
     socket.join('lobby');
     socket.room = 'lobby';
     socket.hash = hash;
@@ -52,7 +54,6 @@ const onChangeRoom = (sock) => {
       const room = gameRooms[data.room];
 
       room.startUpdate(io);
-      // gameRooms[data.room].addPlayer(data.user);
 
       // fire to create room in child process
       room.update.send(new Message('initData', {
@@ -163,7 +164,9 @@ const onDisconnect = (sock) => {
             playerHash: socket.hash,
           }));
 
-          delete game.players[socket.hash];
+          if (game.players[socket.hash]) {
+            delete game.players[socket.hash];
+          }
 
           socket.leave(socket.room);
           // deletes room if no players exist in it

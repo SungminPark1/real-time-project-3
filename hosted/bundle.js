@@ -119,7 +119,6 @@ var updateSkills = function updateSkills() {
 
       // if currentSprite is greater - set active to false
       if (skill.currentSprite > skill.sprites) {
-        console.log('hit');
         skill.active = false;
       }
 
@@ -130,6 +129,13 @@ var updateSkills = function updateSkills() {
       } else {
         skill.imagePos.x++;
       }
+    }
+
+    // make the skill follow players
+    if (skill.type === 'Hp Regen') {
+      var player = players[skill.hash];
+
+      skill.pos = player.pos;
     }
   }
 
@@ -233,25 +239,26 @@ var handleSkill = function handleSkill(type, data) {
       active: true
     };
   } else if (type === 'Hp Regen') {
-    // TO DO
-    // find a way to limit fire rate (skill is active until toggled off or player runs out of mp)
-    // need to push to each player location
-    /*
+    var keys = Object.keys(players);
+    for (var i = 0; i < keys.length; i++) {
       skill = {
-        type,
-        pos: data.pos,
+        type: type,
+        hash: players[keys[i]].hash,
+        pos: players[keys[i]].pos,
         size: 100,
         image: hpRegenImage,
         imagePos: {
           x: 0,
-          y: 0,
+          y: 0
         },
         frame: 0,
         currentSprite: 0,
         sprites: 20,
-        active: true,
+        active: true
       };
-    */
+      skills.push(skill);
+    }
+    return;
   } else if (type === 'Fireball') {
     var player = players[hash];
     var size = (player.hitbox + player.graze + 25) * 2;
@@ -271,29 +278,33 @@ var handleSkill = function handleSkill(type, data) {
       active: true
     };
   } else if (type === 'Fire Storm') {
-    // TO DO
-    // find a way to limit fire rate (skill is active until toggled off or player runs out of mp)
-    /*
-      skill = {
-        type,
-        pos: data.pos,
-        size: 100,
-        image: fireStormImage,
-        imagePos: {
-          x: 0,
-          y: 0,
-        },
-        frame: 0,
-        currentSprite: 0,
-        sprites: 12,
-        active: true,
-      };
-    */
+    // randomize pos slightly
+    var pos = {
+      x: data.pos.x + Math.floor(Math.random() * 41 - 20),
+      y: data.pos.y + Math.floor(Math.random() * 41 - 20)
+    };
+
+    skill = {
+      type: type,
+      pos: pos,
+      size: 100,
+      image: fireStormImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 12,
+      active: true
+    };
   }
 
   skills.push(skill);
 };
 
+// update client's preparing state
+// handles user inputs
 var updatePreparing = function updatePreparing() {
   // clear bullet and skill array
   updated = false;
@@ -344,7 +355,8 @@ var updatePreparing = function updatePreparing() {
   }
 };
 
-// called in playing state
+// update client's playing state
+// handles user inputs
 var updatePlaying = function updatePlaying() {
   var user = players[hash];
   updated = false;
@@ -493,7 +505,7 @@ var drawPlayer = function drawPlayer(player) {
   }
 };
 
-// draw players
+// draw players (playing state)
 var drawPlayers = function drawPlayers() {
   var keys = Object.keys(players);
 
@@ -522,7 +534,7 @@ var drawPlayers = function drawPlayers() {
   drawPlayer(user);
 };
 
-// draw enemy
+// draw enemy (playing state)
 var drawEnemy = function drawEnemy() {
   // check if enemy exist remove later when enemy build is all set up ?
   if (enemy) {
@@ -544,7 +556,7 @@ var drawEnemy = function drawEnemy() {
   }
 };
 
-// draw bullets
+// draw bullets (playing state)
 var drawBullets = function drawBullets() {
   for (var i = 0; i < bullets.length; i++) {
     var bullet = bullets[i];
@@ -594,6 +606,7 @@ var drawText = function drawText(text, x) {
   ctx.restore();
 };
 
+// draw player ready state (prepare state)
 var drawPlayersReady = function drawPlayersReady() {
   ctx.save();
   ctx.textAlign = 'center';
@@ -625,6 +638,7 @@ var drawPlayersReady = function drawPlayersReady() {
   ctx.restore();
 };
 
+// draw class select (prepare state)
 var drawSelectScreen = function drawSelectScreen() {
   var user = players[hash];
   var rectWidth = width / 4 - 2;
@@ -649,7 +663,7 @@ var drawSelectScreen = function drawSelectScreen() {
     ctx.fillRect(11, 390, rectWidth - 20, 68);
   }
 
-  /// label boxes with class names
+  // label boxes with class names
   ctx.strokeRect(11, 120, rectWidth - 20, 68);
   drawText('Fighter', rectWidth / 2, 140, 24);
 
@@ -665,7 +679,7 @@ var drawSelectScreen = function drawSelectScreen() {
   ctx.restore();
 };
 
-// draw Hud
+// draw Hud (both states)
 var drawHUD = function drawHUD(state) {
   ctx.save();
   ctx.textAlign = 'center';
@@ -738,19 +752,6 @@ var drawHUD = function drawHUD(state) {
   }
   ctx.restore();
 };
-
-/*
-  const checkReady = () => {
-    const user = players[hash];
-
-    // emit only when current keypress is down and previous is up
-    if (myKeys.keydown[myKeys.KEYBOARD.KEY_SPACE] && !previousKeyDown) {
-      socket.emit('togglePlayerReady', {
-        ready: !user.ready,
-      });
-    }
-  };
-*/
 
 // players can move and update ready state.
 var preparing = function preparing(state) {

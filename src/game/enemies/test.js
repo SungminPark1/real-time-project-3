@@ -13,8 +13,8 @@ class Star extends Enemy {
     this.patterns = 9;
     this.attackPattern = utils.getRandomInt(this.patterns);
 
-    this.currentAttackDur = 600 + (60 * level);
-    this.attackDur = 600 + (60 * level);
+    this.currentAttackDur = 420 + (60 * level);
+    this.attackDur = 420 + (60 * level);
 
     this.currentRestDur = 180;
     this.restDur = 180;
@@ -141,7 +141,7 @@ class Star extends Enemy {
   // velocity + spin + bullet accel
   pattern8() {
     if (this.currentAttackDur === this.attackDur) {
-      const emitter = new Emitter({ x: 20, y: 20 }, { x: 0, y: 1 }, 20);
+      const emitter = new Emitter({ x: 20, y: 20 }, { x: 0, y: 1 }, 15);
       emitter.addVel({ x: 0, y: 35 });
       emitter.addSpin(-2, 0, { max: 1, min: -180 }, true);
       emitter.addBulletAccel(0.5);
@@ -149,7 +149,7 @@ class Star extends Enemy {
 
       this.emitters.push(emitter);
 
-      const emitter2 = new Emitter({ x: 620, y: 20 }, { x: 0, y: 1 }, 20);
+      const emitter2 = new Emitter({ x: 620, y: 20 }, { x: 0, y: 1 }, 15);
       emitter2.addVel({ x: 0, y: 35 });
       emitter2.addSpin(2, 0, { max: 180, min: -1 }, true);
       emitter2.addBulletAccel(0.5);
@@ -175,7 +175,8 @@ class Star extends Enemy {
       } else if (this.attackPattern === 3) {
         this.pattern3();
       } else if (this.attackPattern === 4) {
-        this.pattern4();
+        // TURN BACK TO NORMAL
+        this.pattern2();
       } else if (this.attackPattern === 5) {
         this.pattern5();
       } else if (this.attackPattern === 6) {
