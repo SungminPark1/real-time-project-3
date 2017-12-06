@@ -43,7 +43,10 @@ process.on('message', (m) => {
       break;
     }
     case 'deletePlayer': {
-      delete room.players[m.data.playerHash];
+      if (room.players[m.data.playerHash]) {
+        delete room.players[m.data.playerHash];
+        console.log('deleted player child.js');
+      }
 
       process.send(new Message('deletePlayer', {
         hash: m.data.playerHash,

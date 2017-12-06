@@ -166,6 +166,7 @@ const onDisconnect = (sock) => {
 
           if (game.players[socket.hash]) {
             delete game.players[socket.hash];
+            console.log('deleted player sockets.js');
           }
 
           socket.leave(socket.room);
@@ -177,6 +178,8 @@ const onDisconnect = (sock) => {
           }
         }
       }
+    } else {
+      socket.leave('lobby');
     }
   });
 };
