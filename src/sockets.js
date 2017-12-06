@@ -42,25 +42,25 @@ const onJoin = (sock) => {
 // if room doesn't exist - create room
 // else - they join the existing room
 const onChangeRoom = (sock) => {
+  // Heroku is breaking somewhere here
+  // If two players are in the lobby and a new room
+  // is created the lobby will break and the app will error
   const socket = sock;
 
   socket.on('changeRoom', (data) => {
     if (!gameRooms[data.room]) {
-      // Heroku is breaking somewhere here
-      // If two players are in the lobby and a new room
-      // is created the lobby will break and the app will error
-
       socket.leave('lobby');
       socket.join(data.room);
       socket.room = data.room;
 
+      console.log(`creating room ${data.room}`);
       gameRooms[data.room] = new Room(data.room);
       const room = gameRooms[data.room];
 
       room.startUpdate(io);
 
       // fire to create room in child process
-      console.log('fireing initData');
+      console.log('firing initData');
       room.update.send(new Message('initData', {
         room: data.room,
         playerHash: socket.hash,
