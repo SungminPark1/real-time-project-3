@@ -1,5 +1,7 @@
 const child = require('child_process');
 
+let io;
+
 const GAME_PLAYING = 'playing';
 class Room {
   constructor(data) {
@@ -7,7 +9,8 @@ class Room {
     this.state = GAME_PLAYING; // cycle: preparing -> started -> restarting -> (loop)
   }
 
-  startUpdate(io) {
+  startUpdate(ioCopy) {
+    io = ioCopy;
     console.log(`child created: ${this.room}`);
     this.update = child.fork('./src/game/child.js');
 
