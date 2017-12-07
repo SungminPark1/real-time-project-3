@@ -903,7 +903,7 @@ var roomRefresh = function roomRefresh(data) {
 };
 
 var setupSocket = function setupSocket() {
-  socket.emit('join');
+  // socket.emit('join');
 
   socket.on('hash', function (data) {
     console.log('got hash ' + data.hash);
@@ -1005,7 +1005,7 @@ var init = function init() {
   // event listeners
   changeRoom.addEventListener('click', function () {
     if (roomname.value) {
-      socket.emit('changeRoom', {
+      socket.emit('join', {
         room: roomname.value,
         user: {
           hash: hash,

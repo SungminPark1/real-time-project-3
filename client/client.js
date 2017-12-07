@@ -905,7 +905,7 @@ const roomRefresh = (data) => {
 };
 
 const setupSocket = () => {
-  socket.emit('join');
+  // socket.emit('join');
 
   socket.on('hash', (data) => {
     console.log(`got hash ${data.hash}`);
@@ -1007,7 +1007,7 @@ const init = () => {
   // event listeners
   changeRoom.addEventListener('click', () => {
     if (roomname.value) {
-      socket.emit('changeRoom', {
+      socket.emit('join', {
         room: roomname.value,
         user: {
           hash,

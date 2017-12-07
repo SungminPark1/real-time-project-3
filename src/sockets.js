@@ -10,6 +10,7 @@ const onJoin = (sock) => {
   const socket = sock;
 
   // create player's hash and put them in the lobby room
+  /*
   socket.on('join', () => {
     const hash = xxh.h32(`${socket.id}${new Date().getTime()}`, 0xCAFEBABE).toString(16);
 
@@ -35,6 +36,62 @@ const onJoin = (sock) => {
 
     socket.emit('hash', { hash });
     socket.emit('roomList', rooms);
+  });
+  */
+  socket.on('join', (data) => {
+    const hash = xxh.h32(`${socket.id}${new Date().getTime()}`, 0xCAFEBABE).toString(16);
+
+    console.log(`new player: ${hash}`);
+
+    socket.join('lobby');
+    socket.room = 'lobby';
+    socket.hash = hash;
+
+    socket.emit('hash', { hash });
+
+    if (!gameRooms[data.room]) {
+      socket.leave('lobby');
+      socket.join(data.room);
+      socket.room = data.room;
+
+      console.log(`creating room ${data.room}`);
+      gameRooms[data.room] = new Room(data.room);
+      const room = gameRooms[data.room];
+
+      room.startUpdate(io);
+
+      // fire to create room in child process
+      console.log('firing initData');
+      room.update.send(new Message('initData', {
+        room: data.room,
+        playerHash: socket.hash,
+        playerId: socket.id,
+        playerName: data.user.name,
+      }));
+    } else {
+      // check if username is already in use
+      const keys = Object.keys(gameRooms[data.room].players);
+
+      for (let i = 0; i < keys.length; i++) {
+        if (data.user.name === keys[i]) {
+          socket.emit('usernameError', { msg: 'Username already in use' });
+          return;
+        }
+      }
+
+      socket.leave('lobby');
+      socket.join(data.room);
+      socket.room = data.room;
+
+      const room = gameRooms[data.room];
+
+      // add player to child process update
+      room.update.send(new Message('addPlayer', {
+        playerHash: socket.hash,
+        playerId: socket.id,
+        playerName: data.user.name,
+      }));
+    }
   });
 };
 
