@@ -969,7 +969,6 @@ var setupSocket = function setupSocket() {
 };
 
 var init = function init() {
-  socket = io.connect();
   canvas = document.querySelector('#main');
   ctx = canvas.getContext('2d');
 
@@ -1000,11 +999,14 @@ var init = function init() {
   roomList = document.querySelector('.room__list');
   refreshRooms = document.querySelector('.refresh__room');
 
-  setupSocket();
-
   // event listeners
   changeRoom.addEventListener('click', function () {
+    // if user is valid connect socket and emit join
     if (roomname.value) {
+      socket = io.connect();
+
+      setupSocket();
+
       socket.emit('join', {
         room: roomname.value,
         user: {

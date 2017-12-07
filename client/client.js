@@ -971,7 +971,6 @@ const setupSocket = () => {
 };
 
 const init = () => {
-  socket = io.connect();
   canvas = document.querySelector('#main');
   ctx = canvas.getContext('2d');
 
@@ -1002,11 +1001,14 @@ const init = () => {
   roomList = document.querySelector('.room__list');
   refreshRooms = document.querySelector('.refresh__room');
 
-  setupSocket();
-
   // event listeners
   changeRoom.addEventListener('click', () => {
+    // if user is valid connect socket and emit join
     if (roomname.value) {
+      socket = io.connect();
+
+      setupSocket();
+
       socket.emit('join', {
         room: roomname.value,
         user: {

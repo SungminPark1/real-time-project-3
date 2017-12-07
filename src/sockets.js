@@ -43,14 +43,11 @@ const onJoin = (sock) => {
 
     console.log(`new player: ${hash}`);
 
-    socket.join('lobby');
-    socket.room = 'lobby';
     socket.hash = hash;
 
     socket.emit('hash', { hash });
 
     if (!gameRooms[data.room]) {
-      socket.leave('lobby');
       socket.join(data.room);
       socket.room = data.room;
 
@@ -79,7 +76,6 @@ const onJoin = (sock) => {
         }
       }
 
-      socket.leave('lobby');
       socket.join(data.room);
       socket.room = data.room;
 
