@@ -8,7 +8,7 @@ const PORT = process.env.PORT || process.env.NODE_PORT || 3000;
 
 const app = express();
 app.use((req, res, next) => {
-  console.log(req.url);
+  // console.log(req.url);
   next();
 });
 app.use('/assets', express.static(path.resolve(`${__dirname}/../hosted/`)));
