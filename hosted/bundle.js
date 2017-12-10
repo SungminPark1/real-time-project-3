@@ -94,6 +94,7 @@ var clamp = function clamp(val, min, max) {
   return Math.max(min, Math.min(max, val));
 };
 
+// SKILL RELATED
 var updateSkills = function updateSkills() {
   for (var i = 0; i < skills.length; i++) {
     var skill = skills[i];
@@ -291,6 +292,7 @@ var handleSkill = function handleSkill(type, data) {
   skills.push(skill);
 };
 
+// CLIENT UPDATE RELATED
 // update client's preparing state
 // handles user inputs
 var updatePreparing = function updatePreparing() {
@@ -427,6 +429,7 @@ var updatePlaying = function updatePlaying() {
   }
 };
 
+// DRAW RELATED
 var drawFillCircle = function drawFillCircle(pos, radius, color, opacity, startAng, endAngle, ccw) {
   ctx.save();
   ctx.fillStyle = 'rgba(' + color.r + ',' + color.g + ',' + color.b + ', ' + opacity + ')';
@@ -445,6 +448,15 @@ var drawStrokeCircle = function drawStrokeCircle(pos, radius, color, opacity, w,
   ctx.arc(pos.x, pos.y, radius, startAng, endAngle, ccw);
   ctx.stroke();
   ctx.closePath();
+  ctx.restore();
+};
+
+var drawCritcalPoint = function drawCritcalPoint(pos, sprite, opacity) {
+  // something
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.drawImage(bullets64px, sprite * 64, 0, 64, 64, pos.x - 32, pos.y - 32, 64, 64);
+  // drawStrokeCircle(pos, 32, { r: 255, g: 255, b: 255 }, 1, 2, 0, Math.PI * 2, false);
   ctx.restore();
 };
 
@@ -527,6 +539,8 @@ var drawPlayers = function drawPlayers() {
 
   // draw clients player
   var user = players[hash];
+  var opacity = user.currentAttRate === 0 ? 1 : 0.5;
+  drawCritcalPoint(user.critcalPos, user.color.sprite, opacity);
   drawPlayer(user);
 };
 
@@ -874,6 +888,33 @@ var handleDraw = function handleDraw() {
   window.requestAnimationFrame(handleDraw);
 };
 
+// SOCKET.ON RELATED
+var setHash = function setHash(data) {
+  console.log('got hash ' + data.hash);
+  hash = data.hash;
+};
+
+var handleInitData = function handleInitData(data) {
+  roomState = data.state;
+  players = data.players || {};
+  enemy = data.enemy || {};
+  bullets = data.bullets || [];
+
+  overlay.style.display = 'none';
+  roomInfo.style.display = 'none';
+
+  window.requestAnimationFrame(handleDraw);
+};
+
+var handleStartUp = function handleStartUp(data) {
+  roomState = data.state;
+  players = data.players;
+  enemy = data.enemy;
+  bullets = data.bullets;
+  skills = [];
+};
+
+// called in handleUpdate
 var updatePlayer = function updatePlayer(users) {
   var keys = Object.keys(users);
 
@@ -894,6 +935,7 @@ var updatePlayer = function updatePlayer(users) {
       player.reviveTimer = updatedPlayer.reviveTimer;
       player.skill1Used = updatedPlayer.skill1Used;
       player.skill2Used = updatedPlayer.skill2Used;
+      player.critcalPos = updatedPlayer.critcalPos;
 
       // values that should be updated if the client emited updatedPlayer
       if (player.lastUpdate < updatedPlayer.lastUpdate) {
@@ -912,7 +954,6 @@ var updatePlayer = function updatePlayer(users) {
   }
 };
 
-// called when server sends update
 var handleUpdate = function handleUpdate(data) {
   roomState = data.state;
   bullets = data.bullets;
@@ -944,12 +985,31 @@ var levelPlayer = function levelPlayer(data) {
   player.graze = data.player.graze;
 };
 
+var playerPreparing = function playerPreparing(data) {
+  var player = players[data.hash];
+
+  player.type = data.type;
+  player.ready = data.ready;
+};
+
 var playerIsAlive = function playerIsAlive(data) {
   var player = players[data.hash];
 
   player.isAlive = data.isAlive;
   player.reviveTimer = data.reviveTimer;
   player.reviveTime = data.reviveTime;
+};
+
+var playerAttacking = function playerAttacking(data) {
+  if (data.isCritcalHit) {
+    handleSkill('critcalAttack', data);
+  } else {
+    handleSkill('normalAttack', data);
+  }
+};
+
+var playerUsedSkill = function playerUsedSkill(data) {
+  handleSkill(data.skillName, data);
 };
 
 var roomRefresh = function roomRefresh(data) {
@@ -966,76 +1026,40 @@ var roomRefresh = function roomRefresh(data) {
   }
 };
 
+var changeRoomError = function changeRoomError(data) {
+  isChangingRoom = false;
+  console.log(data.msg);
+};
+
+var usernameError = function usernameError(data) {
+  username.style.border = 'solid 1px red';
+  isChangingRoom = false;
+  console.log(data.msg);
+};
+
 var setupSocket = function setupSocket() {
   // socket.emit('join');
 
-  socket.on('hash', function (data) {
-    console.log('got hash ' + data.hash);
-    hash = data.hash;
-  });
+  socket.on('hash', setHash);
 
-  // get other clients data from server
-  socket.on('initData', function (data) {
-    roomState = data.state;
-    players = data.players || {};
-    enemy = data.enemy || {};
-    bullets = data.bullets || [];
-
-    overlay.style.display = 'none';
-    roomInfo.style.display = 'none';
-
-    window.requestAnimationFrame(handleDraw);
-  });
-
-  socket.on('startGame', function (data) {
-    roomState = data.state;
-    players = data.players;
-    enemy = data.enemy;
-    bullets = data.bullets;
-    skills = [];
-  });
-
+  // game room update related
+  socket.on('initData', handleInitData);
+  socket.on('startGame', handleStartUp);
   socket.on('update', handleUpdate);
 
+  // player update related
   socket.on('addPlayer', addPlayer);
-
   socket.on('removePlayer', removePlayer);
-
   socket.on('levelPlayer', levelPlayer);
-
-  socket.on('playerPreparing', function (data) {
-    var player = players[data.hash];
-
-    player.type = data.type;
-    player.ready = data.ready;
-  });
-
+  socket.on('playerPreparing', playerPreparing);
   socket.on('playerIsAlive', playerIsAlive);
+  socket.on('playerAttacking', playerAttacking);
+  socket.on('playerUsedSkill', playerUsedSkill);
 
-  socket.on('playerAttacking', function (data) {
-    if (data.isCritcal) {
-      handleSkill('critcalAttack', data);
-    } else {
-      handleSkill('normalAttack', data);
-    }
-  });
-
-  socket.on('playerUsedSkill', function (data) {
-    handleSkill(data.skillName, data);
-  });
-
+  // lobby related
   socket.on('roomList', roomRefresh);
-
-  socket.on('changeRoomError', function (data) {
-    isChangingRoom = false;
-    console.log(data.msg);
-  });
-
-  socket.on('usernameError', function (data) {
-    username.style.border = 'solid 1px red';
-    isChangingRoom = false;
-    console.log(data.msg);
-  });
+  socket.on('changeRoomError', changeRoomError);
+  socket.on('usernameError', usernameError);
 };
 
 var init = function init() {

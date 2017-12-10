@@ -1,3 +1,5 @@
+const Victor = require('victor');
+
 const circlesDistance = (c1, c2) => {
   const dx = c2.x - c1.x;
   const dy = c2.y - c1.y;
@@ -11,20 +13,12 @@ const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 
 // include victor and do unit vector through that
 const getRandomUnitVector = () => {
-  let x = (Math.random() * 2) - 1;
-  let y = (Math.random() * 2) - 1;
-  let length = Math.sqrt((x * x) + (y * y));
+  const x = (Math.random() * 2) - 1;
+  const y = (Math.random() * 2) - 1;
 
-  if (length === 0) { // very unlikely
-    x = 1; // point right
-    y = 0;
-    length = 1;
-  } else {
-    x /= length;
-    y /= length;
-  }
+  const pos = new Victor(x, y).normalize();
 
-  return { x, y };
+  return { x: pos.x, y: pos.y };
 };
 
 module.exports = {

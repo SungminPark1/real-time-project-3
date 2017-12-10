@@ -54,24 +54,28 @@ class Game {
       // set player color
       if (i === 0) {
         color = {
+          sprite: 0,
           r: 255,
           g: 0,
           b: 0,
         };
       } else if (i === 1) {
         color = {
+          sprite: 1,
           r: 0,
           g: 255,
           b: 0,
         };
       } else if (i === 2) {
         color = {
+          sprite: 2,
           r: 0,
           g: 255,
           b: 255,
         };
       } else {
         color = {
+          sprite: 3,
           r: 255,
           g: 165,
           b: 0,
@@ -250,12 +254,19 @@ class Game {
             const range = (player.maxDamage - player.minDamage) + 1;
 
             this.enemy.hp -= utils.getRandomInt(range, player.minDamage);
+
+            // deal another strike if its critcal
+            if (player.isCritcalHit) {
+              this.enemy.hp -= utils.getRandomInt(range, player.minDamage);
+            }
+
             player.attacking = false;
             player.currentAttRate = player.attRate;
 
             // TO DO: ADD emit to rpc attack animation if attacking is true
             process.send(new Message('playerAttacking', {
               pos: this.enemy.pos,
+              isCritcalHit: player.isCritcalHit,
             }));
           }
           // check skill used
@@ -300,6 +311,9 @@ class Game {
             }));
           }
         }
+
+        // update player's critcal hit location
+        player.update(this.dt);
 
         this.clientPlayers[keys[i]] = player.getClientData();
       }

@@ -1,4 +1,5 @@
 const Message = require('../message.js');
+const utils = require('../utils.js');
 
 class Player {
   constructor(user) {
@@ -13,8 +14,11 @@ class Player {
     };
     this.prevPos = { ...this.pos };
     this.destPos = { ...this.pos };
+    this.critcalPos = { x: 320, y: 320 };
+    this.critcalVel = utils.getRandomUnitVector();
     this.alpha = 0;
     this.color = {
+      sprite: 0,
       r: 0,
       g: 0,
       b: 0,
@@ -38,6 +42,7 @@ class Player {
     this.capGraze = 30;
 
     this.attacking = false;
+    this.isCritcalHit = false;
     this.currentAttRate = 600;
     this.attRate = 600;
     this.capAttRate = 60;
@@ -72,6 +77,7 @@ class Player {
       pos,
       destPos,
       prevPos,
+      critcalPos,
       hp,
       energy,
       currentAttRate,
@@ -88,6 +94,7 @@ class Player {
       pos,
       destPos,
       prevPos,
+      critcalPos,
       hp,
       energy,
       currentAttRate,
@@ -104,6 +111,18 @@ class Player {
     const { maxHp, maxEnergy, maxDamage, minDamage, attRate, exp, hitbox, graze } = this;
 
     return { maxHp, maxEnergy, maxDamage, minDamage, attRate, exp, hitbox, graze };
+  }
+
+  checkCritcal() {
+    const distance = utils.circlesDistance(this.pos, this.critcalPos);
+
+    // 32 is the radius of the critcal point sprite
+    if (distance < this.hitbox + 32) {
+      this.isCritcalHit = true;
+      this.critcalVel = utils.getRandomUnitVector();
+    } else {
+      this.isCritcalHit = false;
+    }
   }
 
   updatePreparing(user) {
@@ -131,12 +150,36 @@ class Player {
 
     if (user.attacking) {
       this.attacking = true;
+      this.checkCritcal();
     }
     if (user.toggleSkill1) {
       this.skill1Used = !this.skill1Used;
     }
     if (user.toggleSkill2) {
       this.skill2Used = !this.skill2Used;
+    }
+  }
+
+  update(dt) {
+    this.critcalPos.x += this.critcalVel.x * (this.speed * dt);
+    this.critcalPos.y += this.critcalVel.y * (this.speed * dt);
+
+    // reverse x if it reach the screen edge
+    if (this.critcalPos.x > 608) {
+      this.critcalVel.x *= -1;
+      this.critcalPos.x += this.critcalVel.x * (this.speed * dt);
+    } else if (this.critcalPos.x < 32) {
+      this.critcalVel.x *= -1;
+      this.critcalPos.x += this.critcalVel.x * (this.speed * dt);
+    }
+
+    // reverse y if it reach the screen edge
+    if (this.critcalPos.y > 508) {
+      this.critcalVel.y *= -1;
+      this.critcalPos.y += this.critcalVel.y * (this.speed * dt);
+    } else if (this.critcalPos.y < 32) {
+      this.critcalVel.y *= -1;
+      this.critcalPos.y += this.critcalVel.y * (this.speed * dt);
     }
   }
 }

@@ -42,7 +42,7 @@ const onJoin = (sock) => {
   socket.on('join', (data) => {
     const hash = xxh.h32(`${socket.id}${new Date().getTime()}`, 0xCAFEBABE).toString(16);
 
-    console.log(`new player: ${hash}`);
+    // console.log(`new player: ${hash}`);
 
     socket.hash = hash;
 
@@ -56,14 +56,14 @@ const onJoin = (sock) => {
       socket.join(data.room);
       socket.room = data.room;
 
-      console.log(`creating room ${data.room}`);
+      // console.log(`creating room ${data.room}`);
       gameRooms[data.room] = new Room(data.room);
       const room = gameRooms[data.room];
 
       room.startUpdate(io);
 
       // fire to create room in child process
-      console.log('firing initData');
+      // console.log('firing initData');
       room.update.send(new Message('initData', {
         room: data.room,
         playerHash: socket.hash,
@@ -108,58 +108,60 @@ const onJoin = (sock) => {
 // move the player to the room name they choose
 // if room doesn't exist - create room
 // else - they join the existing room
-const onChangeRoom = (sock) => {
-  // Heroku is breaking somewhere here
-  // If two players are in the lobby and a new room
-  // is created the lobby will break and the app will error
-  const socket = sock;
+/*
+  const onChangeRoom = (sock) => {
+    // Heroku is breaking somewhere here
+    // If two players are in the lobby and a new room
+    // is created the lobby will break and the app will error
+    const socket = sock;
 
-  socket.on('changeRoom', (data) => {
-    if (!gameRooms[data.room]) {
-      socket.leave('lobby');
-      socket.join(data.room);
-      socket.room = data.room;
+    socket.on('changeRoom', (data) => {
+      if (!gameRooms[data.room]) {
+        socket.leave('lobby');
+        socket.join(data.room);
+        socket.room = data.room;
 
-      console.log(`creating room ${data.room}`);
-      gameRooms[data.room] = new Room(data.room);
-      const room = gameRooms[data.room];
+        // console.log(`creating room ${data.room}`);
+        gameRooms[data.room] = new Room(data.room);
+        const room = gameRooms[data.room];
 
-      room.startUpdate(io);
+        room.startUpdate(io);
 
-      // fire to create room in child process
-      console.log('firing initData');
-      room.update.send(new Message('initData', {
-        room: data.room,
-        playerHash: socket.hash,
-        playerId: socket.id,
-        playerName: data.user.name,
-      }));
-    } else {
-      // check if username is already in use
-      const keys = Object.keys(gameRooms[data.room].players);
+        // fire to create room in child process
+        // console.log('firing initData');
+        room.update.send(new Message('initData', {
+          room: data.room,
+          playerHash: socket.hash,
+          playerId: socket.id,
+          playerName: data.user.name,
+        }));
+      } else {
+        // check if username is already in use
+        const keys = Object.keys(gameRooms[data.room].players);
 
-      for (let i = 0; i < keys.length; i++) {
-        if (data.user.name === keys[i]) {
-          socket.emit('usernameError', { msg: 'Username already in use' });
-          return;
+        for (let i = 0; i < keys.length; i++) {
+          if (data.user.name === keys[i]) {
+            socket.emit('usernameError', { msg: 'Username already in use' });
+            return;
+          }
         }
+
+        socket.leave('lobby');
+        socket.join(data.room);
+        socket.room = data.room;
+
+        const room = gameRooms[data.room];
+
+        // add player to child process update
+        room.update.send(new Message('addPlayer', {
+          playerHash: socket.hash,
+          playerId: socket.id,
+          playerName: data.user.name,
+        }));
       }
-
-      socket.leave('lobby');
-      socket.join(data.room);
-      socket.room = data.room;
-
-      const room = gameRooms[data.room];
-
-      // add player to child process update
-      room.update.send(new Message('addPlayer', {
-        playerHash: socket.hash,
-        playerId: socket.id,
-        playerName: data.user.name,
-      }));
-    }
-  });
-};
+    });
+  };
+*/
 
 // refresh room listing in lobby
 const onRoomRefresh = (sock) => {
@@ -262,7 +264,7 @@ const setupSockets = (ioServer) => {
 
   io.sockets.on('connection', (socket) => {
     onJoin(socket);
-    onChangeRoom(socket);
+    // onChangeRoom(socket);
     onRoomRefresh(socket);
     onUpdatePlayer(socket);
     onTogglePlayerReady(socket);

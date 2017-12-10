@@ -2,7 +2,7 @@ const Message = require('../../message.js');
 const Player = require('../player.js');
 
 class Cleric extends Player {
-  constructor(user, pos = { x: 250, y: 250 }, color = { r: 255, g: 0, b: 0 }) {
+  constructor(user, pos = { x: 250, y: 250 }, color = { sprite: 0, r: 255, g: 0, b: 0 }) {
     super(user);
     this.type = 'cleric';
     this.ready = false;

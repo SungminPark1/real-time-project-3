@@ -75,6 +75,7 @@ const prevKeyDown = {
   KEY_L: false,
 };
 
+
 // Utils
 // returns an object { x: var, y: var }
 const lerpPos = (pos0, pos1, alpha) => {
@@ -90,6 +91,8 @@ const lerpPos = (pos0, pos1, alpha) => {
 
 const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 
+
+// SKILL RELATED
 const updateSkills = () => {
   for (let i = 0; i < skills.length; i++) {
     const skill = skills[i];
@@ -289,6 +292,8 @@ const handleSkill = (type, data) => {
   skills.push(skill);
 };
 
+
+// CLIENT UPDATE RELATED
 // update client's preparing state
 // handles user inputs
 const updatePreparing = () => {
@@ -429,6 +434,8 @@ const updatePlaying = () => {
   }
 };
 
+
+// DRAW RELATED
 const drawFillCircle = (pos, radius, color, opacity, startAng, endAngle, ccw) => {
   ctx.save();
   ctx.fillStyle = `rgba(${color.r},${color.g},${color.b}, ${opacity})`;
@@ -447,6 +454,19 @@ const drawStrokeCircle = (pos, radius, color, opacity, w, startAng, endAngle, cc
   ctx.arc(pos.x, pos.y, radius, startAng, endAngle, ccw);
   ctx.stroke();
   ctx.closePath();
+  ctx.restore();
+};
+
+const drawCritcalPoint = (pos, sprite, opacity) => {
+  // something
+  ctx.save();
+  ctx.globalAlpha = opacity;
+  ctx.drawImage(
+    bullets64px,
+    sprite * 64, 0, 64, 64,
+    pos.x - 32, pos.y - 32, 64, 64
+  );
+  // drawStrokeCircle(pos, 32, { r: 255, g: 255, b: 255 }, 1, 2, 0, Math.PI * 2, false);
   ctx.restore();
 };
 
@@ -529,6 +549,8 @@ const drawPlayers = () => {
 
   // draw clients player
   const user = players[hash];
+  const opacity = user.currentAttRate === 0 ? 1 : 0.5;
+  drawCritcalPoint(user.critcalPos, user.color.sprite, opacity);
   drawPlayer(user);
 };
 
@@ -913,6 +935,34 @@ const handleDraw = () => {
   window.requestAnimationFrame(handleDraw);
 };
 
+
+// SOCKET.ON RELATED
+const setHash = (data) => {
+  console.log(`got hash ${data.hash}`);
+  hash = data.hash;
+};
+
+const handleInitData = (data) => {
+  roomState = data.state;
+  players = data.players || {};
+  enemy = data.enemy || {};
+  bullets = data.bullets || [];
+
+  overlay.style.display = 'none';
+  roomInfo.style.display = 'none';
+
+  window.requestAnimationFrame(handleDraw);
+};
+
+const handleStartUp = (data) => {
+  roomState = data.state;
+  players = data.players;
+  enemy = data.enemy;
+  bullets = data.bullets;
+  skills = [];
+};
+
+// called in handleUpdate
 const updatePlayer = (users) => {
   const keys = Object.keys(users);
 
@@ -933,6 +983,7 @@ const updatePlayer = (users) => {
       player.reviveTimer = updatedPlayer.reviveTimer;
       player.skill1Used = updatedPlayer.skill1Used;
       player.skill2Used = updatedPlayer.skill2Used;
+      player.critcalPos = updatedPlayer.critcalPos;
 
       // values that should be updated if the client emited updatedPlayer
       if (player.lastUpdate < updatedPlayer.lastUpdate) {
@@ -951,7 +1002,6 @@ const updatePlayer = (users) => {
   }
 };
 
-// called when server sends update
 const handleUpdate = (data) => {
   roomState = data.state;
   bullets = data.bullets;
@@ -983,12 +1033,31 @@ const levelPlayer = (data) => {
   player.graze = data.player.graze;
 };
 
+const playerPreparing = (data) => {
+  const player = players[data.hash];
+
+  player.type = data.type;
+  player.ready = data.ready;
+};
+
 const playerIsAlive = (data) => {
   const player = players[data.hash];
 
   player.isAlive = data.isAlive;
   player.reviveTimer = data.reviveTimer;
   player.reviveTime = data.reviveTime;
+};
+
+const playerAttacking = (data) => {
+  if (data.isCritcalHit) {
+    handleSkill('critcalAttack', data);
+  } else {
+    handleSkill('normalAttack', data);
+  }
+};
+
+const playerUsedSkill = (data) => {
+  handleSkill(data.skillName, data);
 };
 
 const roomRefresh = (data) => {
@@ -1005,76 +1074,40 @@ const roomRefresh = (data) => {
   }
 };
 
+const changeRoomError = (data) => {
+  isChangingRoom = false;
+  console.log(data.msg);
+};
+
+const usernameError = (data) => {
+  username.style.border = 'solid 1px red';
+  isChangingRoom = false;
+  console.log(data.msg);
+};
+
 const setupSocket = () => {
   // socket.emit('join');
 
-  socket.on('hash', (data) => {
-    console.log(`got hash ${data.hash}`);
-    hash = data.hash;
-  });
+  socket.on('hash', setHash);
 
-  // get other clients data from server
-  socket.on('initData', (data) => {
-    roomState = data.state;
-    players = data.players || {};
-    enemy = data.enemy || {};
-    bullets = data.bullets || [];
-
-    overlay.style.display = 'none';
-    roomInfo.style.display = 'none';
-
-    window.requestAnimationFrame(handleDraw);
-  });
-
-  socket.on('startGame', (data) => {
-    roomState = data.state;
-    players = data.players;
-    enemy = data.enemy;
-    bullets = data.bullets;
-    skills = [];
-  });
-
+  // game room update related
+  socket.on('initData', handleInitData);
+  socket.on('startGame', handleStartUp);
   socket.on('update', handleUpdate);
 
+  // player update related
   socket.on('addPlayer', addPlayer);
-
   socket.on('removePlayer', removePlayer);
-
   socket.on('levelPlayer', levelPlayer);
-
-  socket.on('playerPreparing', (data) => {
-    const player = players[data.hash];
-
-    player.type = data.type;
-    player.ready = data.ready;
-  });
-
+  socket.on('playerPreparing', playerPreparing);
   socket.on('playerIsAlive', playerIsAlive);
+  socket.on('playerAttacking', playerAttacking);
+  socket.on('playerUsedSkill', playerUsedSkill);
 
-  socket.on('playerAttacking', (data) => {
-    if (data.isCritcal) {
-      handleSkill('critcalAttack', data);
-    } else {
-      handleSkill('normalAttack', data);
-    }
-  });
-
-  socket.on('playerUsedSkill', (data) => {
-    handleSkill(data.skillName, data);
-  });
-
+  // lobby related
   socket.on('roomList', roomRefresh);
-
-  socket.on('changeRoomError', (data) => {
-    isChangingRoom = false;
-    console.log(data.msg);
-  });
-
-  socket.on('usernameError', (data) => {
-    username.style.border = 'solid 1px red';
-    isChangingRoom = false;
-    console.log(data.msg);
-  });
+  socket.on('changeRoomError', changeRoomError);
+  socket.on('usernameError', usernameError);
 };
 
 const init = () => {

@@ -8,7 +8,7 @@ class Room {
   }
 
   startUpdate(io) {
-    console.log(`child created: ${this.room}`);
+    // console.log(`child created: ${this.room}`);
     this.update = child.fork('./src/game/child.js');
 
     this.update.on('message', (m) => {
