@@ -16,7 +16,7 @@ const GAME_PLAYING = 'playing';
 class Game {
   constructor(data) {
     this.room = data;
-    this.state = GAME_PREPARING; // cycle: preparing -> started -> restarting -> (loop)
+    this.state = GAME_PREPARING; // cycle: preparing -> playing -> (loop)
     this.lastUpdate = new Date().getTime();
     this.dt = 0;
 
@@ -40,6 +40,11 @@ class Game {
   }
 
   setupGame() {
+    this.enemy = new Test(1, 1);
+    this.bullets = []; // bullets are in enemy object - only has pos, radius, and drained value?
+    this.clientBullets = [];
+
+
     const keys = Object.keys(this.players);
 
     for (let i = 0; i < keys.length; i++) {
@@ -310,8 +315,7 @@ class Game {
       sprite: bullet.sprite,
     }));
 
-    this.tempErrorFixer = deadPlayers;
-    // this.state = keys.length === deadPlayers ? GAME_PREPARING : this.state;
+    this.state = keys.length === deadPlayers ? GAME_PREPARING : this.state;
 
     // emit updated info back
     process.send(new Message('updateRoom', {

@@ -9,35 +9,36 @@ const gameRooms = {};
 const onJoin = (sock) => {
   const socket = sock;
 
-  // create player's hash and put them in the lobby room
+  // this works but heroku has issues with mutliple sockets in lobby
   /*
-  socket.on('join', () => {
-    const hash = xxh.h32(`${socket.id}${new Date().getTime()}`, 0xCAFEBABE).toString(16);
+    socket.on('join', () => {
+      const hash = xxh.h32(`${socket.id}${new Date().getTime()}`, 0xCAFEBABE).toString(16);
 
-    console.log(`new player: ${hash}`);
+      console.log(`new player: ${hash}`);
 
-    socket.join('lobby');
-    socket.room = 'lobby';
-    socket.hash = hash;
+      socket.join('lobby');
+      socket.room = 'lobby';
+      socket.hash = hash;
 
-    // emit back room names and player count
-    const keys = Object.keys(gameRooms);
-    const rooms = {};
+      // emit back room names and player count
+      const keys = Object.keys(gameRooms);
+      const rooms = {};
 
-    // loop through rooms and extract state and player count
-    for (let i = 0; i < keys.length; i++) {
-      const { state, players } = gameRooms[keys[i]];
+      // loop through rooms and extract state and player count
+      for (let i = 0; i < keys.length; i++) {
+        const { state, players } = gameRooms[keys[i]];
 
-      rooms[keys[i]] = {
-        state,
-        count: Object.keys(players).length,
-      };
-    }
+        rooms[keys[i]] = {
+          state,
+          count: Object.keys(players).length,
+        };
+      }
 
-    socket.emit('hash', { hash });
-    socket.emit('roomList', rooms);
-  });
+      socket.emit('hash', { hash });
+      socket.emit('roomList', rooms);
+    });
   */
+
   socket.on('join', (data) => {
     const hash = xxh.h32(`${socket.id}${new Date().getTime()}`, 0xCAFEBABE).toString(16);
 
@@ -47,7 +48,11 @@ const onJoin = (sock) => {
 
     socket.emit('hash', { hash });
 
-    if (!gameRooms[data.room]) {
+    const roomExists = gameRooms[data.room];
+    const playersNum = roomExists ? Object.keys(roomExists.players).length : 0;
+    const roomState = roomExists ? roomExists.state : '';
+
+    if (!roomExists) {
       socket.join(data.room);
       socket.room = data.room;
 
@@ -65,7 +70,7 @@ const onJoin = (sock) => {
         playerId: socket.id,
         playerName: data.user.name,
       }));
-    } else {
+    } else if (roomExists && playersNum < 4 && roomState === 'preparing') {
       // check if username is already in use
       const keys = Object.keys(gameRooms[data.room].players);
 
@@ -87,6 +92,15 @@ const onJoin = (sock) => {
         playerId: socket.id,
         playerName: data.user.name,
       }));
+    } else if (roomExists && roomState !== 'preparing') {
+      // emit can only join rooms that are preparing
+      socket.emit('changeRoomError', { msg: 'Can not join room. Room has already started.' });
+    } else if (roomExists && playersNum >= 4) {
+      // emit message room full
+      socket.emit('changeRoomError', { msg: 'Can not join Room. Room is full.' });
+    } else {
+      // emit message unknown error
+      socket.emit('changeRoomError', { msg: 'An unknown error occured refresh and try again' });
     }
   });
 };

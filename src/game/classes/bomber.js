@@ -16,8 +16,8 @@ class Bomber extends Player {
     this.reviveTimer = 0; // change to tick rate?
     this.reviveTime = 5;
 
-    this.hp = 20;
-    this.maxHp = 20;
+    this.hp = 10;
+    this.maxHp = 10;
 
     this.energy = 0;
     this.maxEnergy = 20;

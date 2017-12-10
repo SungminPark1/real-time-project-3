@@ -9,8 +9,27 @@ const getRandomInt = (range, min = 0) => Math.floor((Math.random() * range) + mi
 
 const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 
+// include victor and do unit vector through that
+const getRandomUnitVector = () => {
+  let x = (Math.random() * 2) - 1;
+  let y = (Math.random() * 2) - 1;
+  let length = Math.sqrt((x * x) + (y * y));
+
+  if (length === 0) { // very unlikely
+    x = 1; // point right
+    y = 0;
+    length = 1;
+  } else {
+    x /= length;
+    y /= length;
+  }
+
+  return { x, y };
+};
+
 module.exports = {
   circlesDistance,
   getRandomInt,
+  getRandomUnitVector,
   clamp,
 };

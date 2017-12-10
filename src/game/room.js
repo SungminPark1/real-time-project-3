@@ -17,7 +17,6 @@ class Room {
           const { state, players, enemy, bullets } = m.data;
           this.state = state;
           this.players = players;
-          this.enemy = enemy;
 
           // send to new player
           io.to(m.data.id).emit('initData', {
@@ -30,15 +29,6 @@ class Room {
         }
         case 'addPlayer': {
           this.players[m.data.hash] = m.data.player;
-
-          const { state, players, enemy } = this;
-
-          // emit initData to new player
-          io.to(m.data.player.id).emit('initData', {
-            state,
-            players,
-            enemy,
-          });
 
           // emit new player to other players
           io.sockets.in(this.room).emit('addPlayer', {
@@ -83,8 +73,7 @@ class Room {
           break;
         }
         case 'updateRoom': {
-          // TO DO
-          // update main server values
+          this.state = m.data.state;
 
           const { state, players, enemy, bullets } = m.data;
           io.sockets.in(this.room).emit('update', {

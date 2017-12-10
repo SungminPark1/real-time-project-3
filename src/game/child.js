@@ -36,6 +36,14 @@ process.on('message', (m) => {
         name: m.data.playerName,
       });
 
+      process.send(new Message('initData', {
+        id: m.data.playerId,
+        state: room.state,
+        players: room.players,
+        enemy: room.enemy.getClientData(),
+        bullets: room.bullets,
+      }));
+
       process.send(new Message('addPlayer', {
         hash: m.data.playerHash,
         player: room.players[m.data.playerHash],

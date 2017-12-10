@@ -8,6 +8,11 @@ let ctx;
 let bullets16px;
 let bullets32px;
 let bullets64px;
+let fighterStatsImage; // fighter stats
+let bomberStatsImage; // bomber stats
+let clericStatsImage; // cleric stats
+let auraStatsImage; // aura stats
+let skillIconImage; // skill icons
 let normalImage; // normal attack
 let criticalImage; // critcal attack
 let finalStrikeImage; // fighter skill 1
@@ -22,6 +27,7 @@ let username;
 let roomname;
 let overlay;
 let changeRoom;
+let isChangingRoom = false;
 
 // side bar element
 let roomInfo;
@@ -84,24 +90,6 @@ const lerpPos = (pos0, pos1, alpha) => {
 
 const clamp = (val, min, max) => Math.max(min, Math.min(max, val));
 
-// used to create client side attack circles and random particle directions
-const getRandomUnitVector = () => {
-  let x = (Math.random() * 2) - 1;
-  let y = (Math.random() * 2) - 1;
-  let length = Math.sqrt((x * x) + (y * y));
-
-  if (length === 0) { // very unlikely
-    x = 1; // point right
-    y = 0;
-    length = 1;
-  } else {
-    x /= length;
-    y /= length;
-  }
-
-  return { x, y };
-};
-
 const updateSkills = () => {
   for (let i = 0; i < skills.length; i++) {
     const skill = skills[i];
@@ -160,7 +148,8 @@ const handleSkill = (type, data) => {
     active: false,
   };
 
-  if (type === 'normalAttack') {
+  // set up sprite only if the image exists
+  if (type === 'normalAttack' && normalImage) {
     skill = {
       type,
       pos: data.pos,
@@ -175,7 +164,7 @@ const handleSkill = (type, data) => {
       sprites: 7,
       active: true,
     };
-  } else if (type === 'critcalAttack') {
+  } else if (type === 'critcalAttack' && criticalImage) {
     skill = {
       type,
       pos: data.pos,
@@ -190,7 +179,7 @@ const handleSkill = (type, data) => {
       sprites: 11,
       active: true,
     };
-  } else if (type === 'Final Strike') {
+  } else if (type === 'Final Strike' && finalStrikeImage) {
     skill = {
       type,
       pos: data.pos,
@@ -205,7 +194,7 @@ const handleSkill = (type, data) => {
       sprites: 7,
       active: true,
     };
-  } else if (type === 'Full Force') {
+  } else if (type === 'Full Force' && fullForceImage) {
     skill = {
       type,
       pos: data.pos,
@@ -220,7 +209,7 @@ const handleSkill = (type, data) => {
       sprites: 8,
       active: true,
     };
-  } else if (type === 'Smite') {
+  } else if (type === 'Smite' && smiteImage) {
     skill = {
       type,
       pos: data.pos,
@@ -235,7 +224,7 @@ const handleSkill = (type, data) => {
       sprites: 7,
       active: true,
     };
-  } else if (type === 'Hp Regen') {
+  } else if (type === 'Hp Regen' && hpRegenImage) {
     const keys = Object.keys(players);
     for (let i = 0; i < keys.length; i++) {
       skill = {
@@ -256,7 +245,7 @@ const handleSkill = (type, data) => {
       skills.push(skill);
     }
     return;
-  } else if (type === 'Fireball') {
+  } else if (type === 'Fireball' && fireballImage) {
     const player = players[hash];
     const size = (player.hitbox + player.graze + 25) * 2;
 
@@ -274,7 +263,7 @@ const handleSkill = (type, data) => {
       sprites: 15,
       active: true,
     };
-  } else if (type === 'Fire Storm') {
+  } else if (type === 'Fire Storm' && fireStormImage) {
     // randomize pos slightly
     const pos = {
       x: data.pos.x + Math.floor((Math.random() * 41) - 20),
@@ -610,7 +599,8 @@ const drawBullets = () => {
 // draw text
 const drawText = (text, x, y = 40, size = 30, color) => {
   ctx.save();
-  ctx.fillStyle = color ? `rgb(${color.r}, ${color.g}, ${color.b})` : 'white';
+  const alpha = color && color.a ? color.a : 1;
+  ctx.fillStyle = color ? `rgba(${color.r}, ${color.g}, ${color.b}, ${alpha})` : 'white';
   ctx.font = `${size}px Arial`;
   ctx.fillText(text, x, y);
   ctx.restore();
@@ -659,32 +649,60 @@ const drawSelectScreen = () => {
   ctx.strokeStyle = 'white';
   ctx.strokeRect(1, 1, rectWidth, height - 102);
 
-  drawText('Classes', (rectWidth / 2), 25, 30);
+  drawText('Classes', (rectWidth / 2), 115, 24);
 
   // show highlight on current selected class
+  // and set class stat image
+  let classStatImage;
   ctx.fillStyle = 'rgba(255, 255, 255, 0.5)';
+
   if (user.type === 'fighter') {
-    ctx.fillRect(11, 120, rectWidth - 20, 68);
+    ctx.fillRect(11, 160, rectWidth - 20, 58);
+
+    classStatImage = fighterStatsImage;
   } else if (user.type === 'bomber') {
-    ctx.fillRect(11, 210, rectWidth - 20, 68);
+    ctx.fillRect(11, 240, rectWidth - 20, 58);
+
+    classStatImage = bomberStatsImage;
   } else if (user.type === 'cleric') {
-    ctx.fillRect(11, 300, rectWidth - 20, 68);
+    ctx.fillRect(11, 320, rectWidth - 20, 58);
+
+    classStatImage = clericStatsImage;
   } else if (user.type === 'aura') {
-    ctx.fillRect(11, 390, rectWidth - 20, 68);
+    ctx.fillRect(11, 400, rectWidth - 20, 58);
+
+    classStatImage = auraStatsImage;
+  }
+
+  // draw class stats if image isn't null
+  if (classStatImage) {
+    ctx.drawImage(
+      classStatImage,
+      2, 0, 478, 480,
+      rectWidth + 2, 0, 480, 480
+    );
+  } else {
+    const red = { r: 255, g: 0, b: 0 };
+    drawText('Error: Unable to find class\'s stat', rectWidth + 240, 260, 20, red);
   }
 
   // label boxes with class names
-  ctx.strokeRect(11, 120, rectWidth - 20, 68);
-  drawText('Fighter', (rectWidth / 2), 140, 24);
+  ctx.strokeRect(11, 160, rectWidth - 20, 58);
+  drawText('Fighter', (rectWidth / 2), 180, 20);
 
-  ctx.strokeRect(11, 210, rectWidth - 20, 68);
-  drawText('Bomber', (rectWidth / 2), 230, 24);
+  ctx.strokeRect(11, 240, rectWidth - 20, 58);
+  drawText('Bomber', (rectWidth / 2), 260, 20);
 
-  ctx.strokeRect(11, 300, rectWidth - 20, 68);
-  drawText('Cleric', (rectWidth / 2), 320, 24);
+  ctx.strokeRect(11, 320, rectWidth - 20, 58);
+  drawText('Cleric', (rectWidth / 2), 340, 20);
 
-  ctx.strokeRect(11, 390, rectWidth - 20, 68);
-  drawText('Aura', (rectWidth / 2), 410, 24);
+  ctx.strokeRect(11, 400, rectWidth - 20, 58);
+  drawText('Aura', (rectWidth / 2), 420, 20);
+
+  // room name
+  ctx.strokeRect(1, 1, rectWidth, 98);
+  drawText('Room', rectWidth / 2, 20, 24);
+  drawText(roomname.value, rectWidth / 2, 60, 20);
 
   ctx.restore();
 };
@@ -742,23 +760,106 @@ const drawHUD = (state) => {
       drawText(player.name, x + (rectWidth / 2), 550, 18, color);
     } else if (state === 'playing') {
       drawText(player.name, x + (rectWidth / 2), 550, 18, player.color);
+      drawText(damageText, x + (rectWidth / 2), 575, 12);
     }
-    drawText(damageText, x + (rectWidth / 2), 575, 12);
 
     // draw skill icons
-    // skill 1
     let opacity = player.energy > player.skill1Cost ? 1 : 0.5;
-    let fillStyle = `rgba(255, 255, 255, ${opacity})`;
-    ctx.fillStyle = fillStyle;
-    ctx.fillRect(x + (rectWidth / 4), 595, 30, 30);
-    ctx.strokeRect(x + (rectWidth / 4), 595, 30, 30);
+    ctx.fillStyle = 'white';
 
-    // skill 2
-    opacity = player.energy > player.skill2Cost ? 1 : 0.5;
-    fillStyle = `rgba(255, 255, 255, ${opacity})`;
-    ctx.fillStyle = fillStyle;
-    ctx.fillRect(x + (rectWidth / 2) + 10, 595, 30, 30);
+    // skill box location
+    ctx.strokeRect(x + (rectWidth / 4), 595, 30, 30);
     ctx.strokeRect(x + (rectWidth / 2) + 10, 595, 30, 30);
+
+    if (player.type === 'fighter') {
+      // skill 1
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(
+        skillIconImage,
+        0, 0, 42, 42,
+        x + (rectWidth / 4), 595, 30, 30
+      );
+      ctx.restore();
+
+      opacity = player.energy > player.skill2Cost ? 1 : 0.5;
+
+      // skill 2
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(
+        skillIconImage,
+        42, 0, 42, 42,
+        x + (rectWidth / 2) + 10, 595, 30, 30
+      );
+      ctx.restore();
+    } else if (player.type === 'bomber') {
+      // skill 1
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(
+        skillIconImage,
+        0, 42, 42, 42,
+        x + (rectWidth / 4), 595, 30, 30
+      );
+      ctx.restore();
+
+      opacity = player.energy > player.skill2Cost ? 1 : 0.5;
+
+      // skill 2
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(
+        skillIconImage,
+        42, 42, 42, 42,
+        x + (rectWidth / 2) + 10, 595, 30, 30
+      );
+      ctx.restore();
+    } else if (player.type === 'cleric') {
+      // skill 1
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(
+        skillIconImage,
+        0, 84, 42, 42,
+        x + (rectWidth / 4), 595, 30, 30
+      );
+      ctx.restore();
+
+      opacity = player.energy > player.skill2Cost ? 1 : 0.5;
+
+      // skill 2
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(
+        skillIconImage,
+        42, 84, 42, 42,
+        x + (rectWidth / 2) + 10, 595, 30, 30
+      );
+      ctx.restore();
+    } else if (player.type === 'aura') {
+      // skill 1
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(
+        skillIconImage,
+        0, 126, 42, 42,
+        x + (rectWidth / 4), 595, 30, 30
+      );
+      ctx.restore();
+
+      opacity = player.energy > player.skill2Cost ? 1 : 0.5;
+
+      // skill 2
+      ctx.save();
+      ctx.globalAlpha = opacity;
+      ctx.drawImage(
+        skillIconImage,
+        42, 126, 42, 42,
+        x + (rectWidth / 2) + 10, 595, 30, 30
+      );
+      ctx.restore();
+    }
   }
   ctx.restore();
 };
@@ -964,8 +1065,14 @@ const setupSocket = () => {
 
   socket.on('roomList', roomRefresh);
 
+  socket.on('changeRoomError', (data) => {
+    isChangingRoom = false;
+    console.log(data.msg);
+  });
+
   socket.on('usernameError', (data) => {
     username.style.border = 'solid 1px red';
+    isChangingRoom = false;
     console.log(data.msg);
   });
 };
@@ -978,17 +1085,22 @@ const init = () => {
   canvas.setAttribute('height', height);
 
   // images
-  bullets16px = document.querySelector('#bullets16px');
-  bullets32px = document.querySelector('#bullets32px');
-  bullets64px = document.querySelector('#bullets64px');
-  normalImage = document.querySelector('#normal');
-  criticalImage = document.querySelector('#critical');
-  finalStrikeImage = document.querySelector('#finalStrike');
-  fullForceImage = document.querySelector('#fullForce');
-  smiteImage = document.querySelector('#smite');
-  hpRegenImage = document.querySelector('#hpRegen');
-  fireballImage = document.querySelector('#fireball');
-  fireStormImage = document.querySelector('#fireStorm');
+  bullets16px = document.querySelector('#bullets16px') || null;
+  bullets32px = document.querySelector('#bullets32px') || null;
+  bullets64px = document.querySelector('#bullets64px') || null;
+  fighterStatsImage = document.querySelector('#fighterStats') || null;
+  bomberStatsImage = document.querySelector('#bomberStats') || null;
+  clericStatsImage = document.querySelector('#clericStats') || null;
+  auraStatsImage = document.querySelector('#auraStats') || null;
+  skillIconImage = document.querySelector('#skillIcon') || null;
+  normalImage = document.querySelector('#normal') || null;
+  criticalImage = document.querySelector('#critical') || null;
+  finalStrikeImage = document.querySelector('#finalStrike') || null;
+  fullForceImage = document.querySelector('#fullForce') || null;
+  smiteImage = document.querySelector('#smite') || null;
+  hpRegenImage = document.querySelector('#hpRegen') || null;
+  fireballImage = document.querySelector('#fireball') || null;
+  fireStormImage = document.querySelector('#fireStorm') || null;
 
   // overlay
   username = document.querySelector('#username');
@@ -1004,7 +1116,10 @@ const init = () => {
   // event listeners
   changeRoom.addEventListener('click', () => {
     // if user is valid connect socket and emit join
-    if (roomname.value) {
+    if (roomname.value && !isChangingRoom) {
+      // prevent attempt to change room multiple times
+      isChangingRoom = true;
+
       socket = io.connect();
 
       setupSocket();
@@ -1022,7 +1137,7 @@ const init = () => {
   });
 
   refreshRooms.addEventListener('click', () => {
-    socket.emit('refreshRoom');
+    // socket.emit('refreshRoom');
   });
 
   window.addEventListener('keydown', (e) => {
