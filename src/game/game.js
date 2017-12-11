@@ -22,11 +22,13 @@ class Game {
 
     this.players = {};
     this.enemy = new Test(1, 1);
+    this.enemyLevel = 1;
     this.bullets = []; // bullets are in enemy object - only has pos, radius, and drained value?
 
     // only nessesary data to set each update
     this.clientPlayers = {};
     this.clientEnemy = {};
+    this.clientEmitter = [];
     this.clientBullets = [];
   }
 
@@ -40,12 +42,13 @@ class Game {
   }
 
   setupGame() {
-    this.enemy = new Test(1, 1);
+    const keys = Object.keys(this.players);
+
+    this.enemyLevel = 1;
+    this.enemy = new Test(this.enemyLevel, keys.length);
+
     this.bullets = []; // bullets are in enemy object - only has pos, radius, and drained value?
     this.clientBullets = [];
-
-
-    const keys = Object.keys(this.players);
 
     for (let i = 0; i < keys.length; i++) {
       let color = {};
@@ -225,7 +228,8 @@ class Game {
       // create new enemy
       // TO DO: pick random enemy type and str depends on player level
       this.bullets = [];
-      this.enemy = new Test(1, 1);
+      this.enemyLevel++;
+      this.enemy = new Test(this.enemyLevel, keys.length);
     } else {
       this.enemy.update(this.dt);
 
@@ -321,6 +325,11 @@ class Game {
 
     this.bullets = this.enemy.bullets;
 
+    this.clientEmitters = this.enemy.emitters.map(emitter => ({
+      pos: emitter.pos,
+      sprite: emitter.sprite,
+    }));
+
     // filter bullets data to send only necessary info
     this.clientBullets = this.bullets.map(bullet => ({
       pos: bullet.pos,
@@ -336,6 +345,7 @@ class Game {
       state: this.state,
       players: this.clientPlayers,
       enemy: this.enemy.getClientData(),
+      emitters: this.clientEmitters,
       bullets: this.clientBullets,
     }));
   }

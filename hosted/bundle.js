@@ -45,6 +45,7 @@ var dt = 0;
 var roomState = 'preparing';
 var players = {};
 var enemy = {};
+var emitters = [];
 var bullets = [];
 var skills = [];
 
@@ -566,6 +567,22 @@ var drawEnemy = function drawEnemy() {
   }
 };
 
+// draw bullet emitters
+var drawEmitters = function drawEmitters() {
+  for (var i = 0; i < emitters.length; i++) {
+    var emitter = emitters[i];
+    var sprite = emitter.sprite;
+    var x = emitter.pos.x - sprite.type / 2;
+    var y = emitter.pos.y - sprite.type / 2;
+
+    ctx.save();
+    if (sprite.type === 32) {
+      ctx.drawImage(bullets32px, sprite.x * 32, sprite.y * 32, sprite.type, sprite.type, x, y, sprite.type, sprite.type);
+    }
+    ctx.restore();
+  }
+};
+
 // draw bullets (playing state)
 var drawBullets = function drawBullets() {
   for (var i = 0; i < bullets.length; i++) {
@@ -588,6 +605,8 @@ var drawBullets = function drawBullets() {
       ctx.drawImage(bullets16px, sprite.x * 16, sprite.y * 16, sprite.type, sprite.type, x, y, sprite.type, sprite.type);
     } else if (sprite.type === 32) {
       ctx.drawImage(bullets32px, sprite.x * 32, sprite.y * 32, sprite.type, sprite.type, x, y, sprite.type, sprite.type);
+    } else if (sprite.type === 64) {
+      ctx.drawImage(bullets64px, sprite.x * 64, sprite.y * 64, sprite.type, sprite.type, x, y, sprite.type, sprite.type);
     }
     ctx.restore();
 
@@ -858,6 +877,7 @@ var playing = function playing(state) {
   updateSkills();
 
   drawEnemy();
+  drawEmitters();
   drawPlayers();
   drawSkills();
   drawBullets();
@@ -956,6 +976,7 @@ var updatePlayer = function updatePlayer(users) {
 
 var handleUpdate = function handleUpdate(data) {
   roomState = data.state;
+  emitters = data.emitters;
   bullets = data.bullets;
   enemy = data.enemy;
 
@@ -983,6 +1004,7 @@ var levelPlayer = function levelPlayer(data) {
   player.exp = data.player.exp;
   player.hitbox = data.player.hitbox;
   player.graze = data.player.graze;
+  player.speed = data.player.speed;
 };
 
 var playerPreparing = function playerPreparing(data) {

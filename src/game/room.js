@@ -75,11 +75,12 @@ class Room {
         case 'updateRoom': {
           this.state = m.data.state;
 
-          const { state, players, enemy, bullets } = m.data;
+          const { state, players, enemy, emitters, bullets } = m.data;
           io.sockets.in(this.room).emit('update', {
             state,
             players,
             enemy,
+            emitters,
             bullets,
           });
           break;

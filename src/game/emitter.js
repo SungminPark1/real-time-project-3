@@ -86,20 +86,72 @@ class Emitter {
   }
 
   // add velocity to emitter
-  addVel(vel, velLimit = {}, reversal = false, posLimit) {
+  addVel(vel, reversal = false, posLimit = null) {
     this.hasVel = true;
 
     this.vel = new Victor(vel.x, vel.y);
 
-    this.velLimit = velLimit;
     this.velReversal = reversal;
-
-    this.posLimit = posLimit;
+    if (posLimit) {
+      this.posMin = posLimit.min;
+      this.posMax = posLimit.max;
+    }
   }
 
   updateVel(dt) {
     this.pos.add(new Victor((this.vel.x * dt), (this.vel.y * dt)));
-    this.inBounds();
+
+    // if reversable check x and y vel
+    // else check if emitter should be removed
+    if (this.velReversal) {
+      if (this.pos.x < this.posMin.x || this.pos.x > this.posMax.x) {
+        this.vel.x *= -1;
+        this.pos.add(new Victor((this.vel.x * dt), (this.vel.y * dt)));
+
+        if (this.hasAccel) {
+          this.initVel = this.vel.clone().norm();
+        }
+      }
+      if (this.pos.y < this.posMin.y || this.pos.y > this.posMax.y) {
+        this.vel.y *= -1;
+        this.pos.add(new Victor((this.vel.x * dt), (this.vel.y * dt)));
+
+        if (this.hasAccel) {
+          this.initVel = this.vel.clone().norm();
+        }
+      }
+    } else {
+      this.inBounds();
+    }
+  }
+
+  addAccel(accel, rate = null, accelLimit = null, reversal = false) {
+    this.hasAccel = true;
+
+    // positive accel = increase current direction
+    // negative accel = decrease then reverse direction
+    this.initVel = this.vel.clone().norm();
+    this.accel = accel;
+    this.accelRate = rate;
+    this.accelLimit = accelLimit;
+    this.accelReversal = reversal;
+  }
+
+  updateAccel() {
+    // if accel has change rate update accel
+    if (this.accelRate !== 0 && this.accelLimit) {
+      const { accelLimit, accelReversal } = this;
+      const atLimit = this.accel >= accelLimit.max || this.accel <= accelLimit.min;
+
+      this.accel = utils.clamp(this.accel + this.accelRate, accelLimit.min, accelLimit.max);
+
+      if (accelReversal && atLimit) {
+        this.accelRate *= -1;
+      }
+    }
+
+    this.vel.x += this.accel * this.initVel.x;
+    this.vel.y += this.accel * this.initVel.y;
   }
 
   // add bullet accel
@@ -171,7 +223,6 @@ class Emitter {
     // update pos if hasVel
     if (this.hasVel) {
       // update velocity if hasAccel
-      // set up addAccel and updateAccel (STRETCH)
       if (this.hasAccel) {
         this.updateAccel();
       }

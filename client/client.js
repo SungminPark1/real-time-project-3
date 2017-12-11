@@ -43,6 +43,7 @@ let dt = 0;
 let roomState = 'preparing';
 let players = {};
 let enemy = {};
+let emitters = [];
 let bullets = [];
 let skills = [];
 
@@ -573,6 +574,26 @@ const drawEnemy = () => {
   }
 };
 
+// draw bullet emitters
+const drawEmitters = () => {
+  for (let i = 0; i < emitters.length; i++) {
+    const emitter = emitters[i];
+    const sprite = emitter.sprite;
+    const x = emitter.pos.x - (sprite.type / 2);
+    const y = emitter.pos.y - (sprite.type / 2);
+
+    ctx.save();
+    if (sprite.type === 32) {
+      ctx.drawImage(
+        bullets32px,
+        sprite.x * 32, sprite.y * 32, sprite.type, sprite.type,
+        x, y, sprite.type, sprite.type
+      );
+    }
+    ctx.restore();
+  }
+};
+
 // draw bullets (playing state)
 const drawBullets = () => {
   for (let i = 0; i < bullets.length; i++) {
@@ -601,6 +622,12 @@ const drawBullets = () => {
       ctx.drawImage(
         bullets32px,
         sprite.x * 32, sprite.y * 32, sprite.type, sprite.type,
+        x, y, sprite.type, sprite.type
+      );
+    } else if (sprite.type === 64) {
+      ctx.drawImage(
+        bullets64px,
+        sprite.x * 64, sprite.y * 64, sprite.type, sprite.type,
         x, y, sprite.type, sprite.type
       );
     }
@@ -905,6 +932,7 @@ const playing = (state) => {
   updateSkills();
 
   drawEnemy();
+  drawEmitters();
   drawPlayers();
   drawSkills();
   drawBullets();
@@ -1004,6 +1032,7 @@ const updatePlayer = (users) => {
 
 const handleUpdate = (data) => {
   roomState = data.state;
+  emitters = data.emitters;
   bullets = data.bullets;
   enemy = data.enemy;
 
@@ -1031,6 +1060,7 @@ const levelPlayer = (data) => {
   player.exp = data.player.exp;
   player.hitbox = data.player.hitbox;
   player.graze = data.player.graze;
+  player.speed = data.player.speed;
 };
 
 const playerPreparing = (data) => {

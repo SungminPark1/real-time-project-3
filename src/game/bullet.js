@@ -66,7 +66,7 @@ class Bullet {
         sprite.staticRotate = true;
         sprite.angle = 0;
         sprite.degree = 0;
-        this.radius = 7;
+        this.radius = 6;
       }
     } else if (type === 32) {
       if (randX) {
@@ -80,9 +80,13 @@ class Bullet {
         sprite.degree = 0;
         this.radius = 12;
       }
-    } else if (type === 62) {
+    } else if (type === 64) {
       if (randX) {
         sprite.x = utils.getRandomInt(4);
+      }
+
+      if (y === 1) {
+        this.radius = 32;
       }
     }
 
