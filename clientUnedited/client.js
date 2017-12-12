@@ -543,7 +543,7 @@ const drawPlayer = (player) => {
   let eAngle = 0;
 
   if (player.isAlive && player.isHit) {
-    opacity = 0.75;
+    opacity = 0.5;
   } else if (!player.isAlive) {
     opacity = 0.5;
   }
