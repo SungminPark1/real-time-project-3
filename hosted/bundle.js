@@ -89,414 +89,8 @@ var lerpPos = function lerpPos(pos0, pos1, alpha) {
 var clamp = function clamp(val, min, max) {
   return Math.max(min, Math.min(max, val));
 };
+'use strict';
 
-// SKILL RELATED
-var updateSkills = function updateSkills() {
-  for (var i = 0; i < skills.length; i++) {
-    var skill = skills[i];
-
-    if (skill.image) {
-      skill.frame++;
-
-      if (skill.frame > 6) {
-        skill.frame = 0;
-        skill.currentSprite++;
-
-        // if currentSprite is greater - set active to false
-        if (skill.currentSprite > skill.sprites) {
-          skill.active = false;
-        }
-
-        // max x is 4 set back to 0 and increase y
-        if (skill.imagePos.x >= 4) {
-          skill.imagePos.x = 0;
-          skill.imagePos.y++;
-        } else {
-          skill.imagePos.x++;
-        }
-      }
-
-      // make the skill follow players
-      if (skill.type === 'Hp Regen') {
-        var player = players[skill.hash];
-
-        skill.pos = player.pos;
-      }
-    } else if (skill.type === 'bs1') {
-      skill.outerRadius *= 0.99;
-      skill.innerRadius *= 0.97;
-      skill.opacity += -0.01;
-      skill.life += -1;
-
-      console.log(skill.active);
-      skill.active = skill.life > 0;
-      console.log(skill.active);
-    } else if (skill.type === 'bs2') {
-      skill.outerRadius += 4;
-      skill.innerRadius += 3;
-      skill.opacity -= 0.003;
-      skill.life += -1;
-
-      skill.active = skill.life > 0;
-    }
-  }
-
-  skills = skills.filter(function (skill) {
-    return skill.active;
-  });
-};
-
-// all skills are 192 x 192
-var drawSkills = function drawSkills() {
-  for (var i = 0; i < skills.length; i++) {
-    var skill = skills[i];
-
-    ctx.save();
-    if (skill.image) {
-      ctx.drawImage(skill.image, skill.imagePos.x * 192, skill.imagePos.y * 192, 192, 192, skill.pos.x - skill.size / 2, skill.pos.y - skill.size / 2, skill.size, skill.size);
-    } else if (skill.type === 'bs1' || skill.type === 'bs2') {
-      var x = skill.pos.x;
-      var y = skill.pos.y;
-
-      var grad = ctx.createRadialGradient(x, y, 0, x, y, skill.outerRadius);
-      if (skill.type === 'bs1') {
-        grad.addColorStop(0, 'rgba(' + skill.color.r + ', ' + skill.color.g + ', ' + skill.color.b + ', 0)');
-        grad.addColorStop(1, 'rgba(' + skill.color.r + ', ' + skill.color.g + ', ' + skill.color.b + ', ' + skill.opacity + ')');
-      } else if (skill.type === 'bs2') {
-        grad.addColorStop(0, 'rgba(' + skill.color.r + ', ' + skill.color.g + ', ' + skill.color.b + ', ' + skill.opacity + ')');
-        grad.addColorStop(1, 'rgba(' + skill.color.r + ', ' + skill.color.g + ', ' + skill.color.b + ', 0)');
-      }
-
-      ctx.fillStyle = grad;
-      ctx.beginPath();
-      ctx.arc(x, y, skill.outerRadius, 0, Math.PI * 2, false); // outer
-      ctx.arc(x, y, skill.innerRadius, 0, Math.PI * 2, true); // inner
-      ctx.fill();
-      ctx.closePath();
-    }
-    ctx.restore();
-  }
-};
-
-// show something when skill is used
-var handleSkill = function handleSkill(type, data) {
-  var skill = {
-    active: false
-  };
-
-  // set up sprite only if the image exists
-  if (type === 'normalAttack' && normalImage) {
-    skill = {
-      type: type,
-      pos: data.pos,
-      size: 100,
-      image: normalImage,
-      imagePos: {
-        x: 0,
-        y: 0
-      },
-      frame: 0,
-      currentSprite: 0,
-      sprites: 7,
-      active: true
-    };
-  } else if (type === 'critcalAttack' && criticalImage) {
-    skill = {
-      type: type,
-      pos: data.pos,
-      size: 100,
-      image: criticalImage,
-      imagePos: {
-        x: 0,
-        y: 0
-      },
-      frame: 0,
-      currentSprite: 0,
-      sprites: 11,
-      active: true
-    };
-  } else if (type === 'Final Strike' && finalStrikeImage) {
-    skill = {
-      type: type,
-      pos: data.pos,
-      size: 100,
-      image: finalStrikeImage,
-      imagePos: {
-        x: 0,
-        y: 0
-      },
-      frame: 0,
-      currentSprite: 0,
-      sprites: 7,
-      active: true
-    };
-  } else if (type === 'Full Force' && fullForceImage) {
-    skill = {
-      type: type,
-      pos: data.pos,
-      size: 100,
-      image: fullForceImage,
-      imagePos: {
-        x: 0,
-        y: 0
-      },
-      frame: 0,
-      currentSprite: 0,
-      sprites: 8,
-      active: true
-    };
-  } else if (type === 'bs1') {
-    var player = players[data.hash];
-
-    skill = {
-      type: type,
-      pos: player.pos,
-      color: {
-        r: Math.round(player.color.r),
-        g: Math.round(player.color.g),
-        b: Math.round(player.color.b)
-      },
-      outerRadius: 2 * (player.hitbox + player.graze),
-      innerRadius: 2 * (player.hitbox + player.graze),
-      opacity: 0.5,
-      life: 50,
-      active: true
-    };
-  } else if (type === 'bs2') {
-    var _player = players[data.hash];
-
-    skill = {
-      type: type,
-      pos: _player.pos,
-      color: {
-        r: Math.round(_player.color.r),
-        g: Math.round(_player.color.g),
-        b: Math.round(_player.color.b)
-      },
-      outerRadius: 1,
-      innerRadius: 0,
-      opacity: Math.Min((28 + 2 * _player.level) / 100, 1),
-      life: 120,
-      active: true
-    };
-  } else if (type === 'Smite' && smiteImage) {
-    skill = {
-      type: type,
-      pos: data.pos,
-      size: 125,
-      image: smiteImage,
-      imagePos: {
-        x: 0,
-        y: 0
-      },
-      frame: 0,
-      currentSprite: 0,
-      sprites: 7,
-      active: true
-    };
-  } else if (type === 'Hp Regen' && hpRegenImage) {
-    var keys = Object.keys(players);
-    for (var i = 0; i < keys.length; i++) {
-      skill = {
-        type: type,
-        hash: players[keys[i]].hash,
-        pos: players[keys[i]].pos,
-        size: 100,
-        image: hpRegenImage,
-        imagePos: {
-          x: 0,
-          y: 0
-        },
-        frame: 0,
-        currentSprite: 0,
-        sprites: 20,
-        active: true
-      };
-      skills.push(skill);
-    }
-    return;
-  } else if (type === 'Fireball' && fireballImage) {
-    var _player2 = players[hash];
-    var size = (_player2.hitbox + _player2.graze + 25) * 2;
-
-    skill = {
-      type: type,
-      pos: data.pos,
-      size: size,
-      image: fireballImage,
-      imagePos: {
-        x: 0,
-        y: 0
-      },
-      frame: 0,
-      currentSprite: 0,
-      sprites: 15,
-      active: true
-    };
-  } else if (type === 'Fire Storm' && fireStormImage) {
-    // randomize pos slightly
-    var pos = {
-      x: data.pos.x + Math.floor(Math.random() * 41 - 20),
-      y: data.pos.y + Math.floor(Math.random() * 41 - 20)
-    };
-
-    skill = {
-      type: type,
-      pos: pos,
-      size: 100,
-      image: fireStormImage,
-      imagePos: {
-        x: 0,
-        y: 0
-      },
-      frame: 0,
-      currentSprite: 0,
-      sprites: 12,
-      active: true
-    };
-  }
-
-  skills.push(skill);
-};
-
-// CLIENT UPDATE RELATED
-// update client's preparing state
-// handles user inputs
-var updatePreparing = function updatePreparing() {
-  var user = players[hash];
-
-  // dont check update if user is undefined
-  if (!user) {
-    return;
-  }
-
-  updated = false;
-  var toggleReady = false;
-
-  var checkKeyW = myKeys.keydown[myKeys.KEYBOARD.KEY_W] && !prevKeyDown.KEY_W;
-  var checkKeyS = myKeys.keydown[myKeys.KEYBOARD.KEY_S] && !prevKeyDown.KEY_S;
-  var checkKeyJ = myKeys.keydown[myKeys.KEYBOARD.KEY_J] && !prevKeyDown.KEY_J;
-
-  if (checkKeyW && !user.ready) {
-    if (user.type === 'fighter') {
-      user.type = 'aura';
-    } else if (user.type === 'bomber') {
-      user.type = 'fighter';
-    } else if (user.type === 'cleric') {
-      user.type = 'bomber';
-    } else if (user.type === 'aura') {
-      user.type = 'cleric';
-    }
-    updated = true;
-  }
-  if (checkKeyS && !user.ready) {
-    if (user.type === 'fighter') {
-      user.type = 'bomber';
-    } else if (user.type === 'bomber') {
-      user.type = 'cleric';
-    } else if (user.type === 'cleric') {
-      user.type = 'aura';
-    } else if (user.type === 'aura') {
-      user.type = 'fighter';
-    }
-    updated = true;
-  }
-
-  // check if user is ready.
-  if (checkKeyJ) {
-    toggleReady = true;
-    updated = true;
-  }
-
-  if (updated) {
-    socket.emit('updatePlayer', {
-      type: user.type,
-      toggleReady: toggleReady
-    });
-  }
-};
-
-// update client's playing state
-// handles user inputs
-var updatePlaying = function updatePlaying() {
-  var user = players[hash];
-
-  // dont check update if user is undefined
-  if (!user) return;
-
-  updated = false;
-  attacking = false;
-  toggleSkill1 = false;
-  toggleSkill2 = false;
-
-  user.prevPos = user.pos;
-  user.alpha = 0.05;
-
-  // movement check
-  // if shift is down or skill is active reduce movement by 50%
-  var modifier = myKeys.keydown[myKeys.KEYBOARD.KEY_SHIFT] || user.skill1Used || user.skill2Used ? 0.5 : 1;
-
-  if (myKeys.keydown[myKeys.KEYBOARD.KEY_W]) {
-    user.destPos.y += -user.speed * dt * modifier;
-    updated = true;
-  }
-  if (myKeys.keydown[myKeys.KEYBOARD.KEY_A]) {
-    user.destPos.x += -user.speed * dt * modifier;
-    updated = true;
-  }
-  if (myKeys.keydown[myKeys.KEYBOARD.KEY_S]) {
-    user.destPos.y += user.speed * dt * modifier;
-    updated = true;
-  }
-  if (myKeys.keydown[myKeys.KEYBOARD.KEY_D]) {
-    user.destPos.x += user.speed * dt * modifier;
-    updated = true;
-  }
-
-  var checkKeyJ = myKeys.keydown[myKeys.KEYBOARD.KEY_J] && !prevKeyDown.KEY_J;
-  var checkKeyK = myKeys.keydown[myKeys.KEYBOARD.KEY_K] && !prevKeyDown.KEY_K;
-  var checkKeyL = myKeys.keydown[myKeys.KEYBOARD.KEY_L] && !prevKeyDown.KEY_L;
-
-  // basic attack
-  if (checkKeyJ && user.currentAttRate <= 0) {
-    attacking = true;
-    updated = true;
-  }
-
-  // skill 1
-  if (checkKeyK && user.energy >= user.skill1Cost) {
-    toggleSkill1 = true;
-    updated = true;
-  }
-
-  // skill 2
-  if (checkKeyL && user.energy >= user.skill2Cost) {
-    toggleSkill2 = true;
-    updated = true;
-  }
-
-  // prevent player from going out of bound
-  user.destPos.x = clamp(user.destPos.x, user.hitbox, 640 - user.hitbox);
-  user.destPos.y = clamp(user.destPos.y, user.hitbox, 540 - user.hitbox);
-
-  // console.log(user.pos, user.prevPos, user.destPos);
-  var checkX = user.pos.x > user.destPos.x + 0.05 || user.pos.x < user.destPos.x - 0.05;
-  var checkY = user.pos.y > user.destPos.y + 0.05 || user.pos.y < user.destPos.y - 0.05;
-
-  // if this client's user moves, send to server to update server
-  if (updated === true || checkX || checkY) {
-    socket.emit('updatePlayer', {
-      pos: user.pos,
-      prevPos: user.prevPos,
-      destPos: user.destPos,
-      attacking: attacking,
-      toggleSkill1: toggleSkill1,
-      toggleSkill2: toggleSkill2
-    });
-  }
-};
-
-// DRAW RELATED
 var drawFillCircle = function drawFillCircle(pos, radius, color, opacity, startAng, endAngle, ccw) {
   ctx.save();
   ctx.fillStyle = 'rgba(' + color.r + ',' + color.g + ',' + color.b + ', ' + opacity + ')';
@@ -973,8 +567,8 @@ var handleDraw = function handleDraw() {
 
   window.requestAnimationFrame(handleDraw);
 };
+'use strict';
 
-// SOCKET.ON RELATED
 var setHash = function setHash(data) {
   console.log('got hash ' + data.hash);
   hash = data.hash;
@@ -997,55 +591,6 @@ var handleStartUp = function handleStartUp(data) {
   enemy = data.enemy;
   bullets = data.bullets;
   skills = [];
-};
-
-// called in handleUpdate
-var updatePlayer = function updatePlayer(users) {
-  var keys = Object.keys(users);
-
-  // loop through players to update
-  for (var i = 0; i < keys.length; i++) {
-    var player = players[keys[i]];
-    var updatedPlayer = users[keys[i]];
-
-    // if player exist and last update is less than server's - update the player
-    // else - do nothing
-    if (player) {
-      // values that should be constantly updated
-      player.hp = updatedPlayer.hp;
-      player.energy = updatedPlayer.energy;
-      player.currentAttRate = updatedPlayer.currentAttRate;
-      player.currentExp = updatedPlayer.currentExp;
-      player.isHit = updatedPlayer.isHit;
-      player.reviveTimer = updatedPlayer.reviveTimer;
-      player.skill1Used = updatedPlayer.skill1Used;
-      player.skill2Used = updatedPlayer.skill2Used;
-      player.critcalPos = updatedPlayer.critcalPos;
-
-      // values that should be updated if the client emited updatedPlayer
-      if (player.lastUpdate < updatedPlayer.lastUpdate) {
-        // Move last update out of player and keep track of rooms last update?
-        player.lastUpdate = updatedPlayer.lastUpdate;
-
-        player.alpha = 0.05;
-
-        // only update other users pos
-        if (player.hash !== hash) {
-          player.prevPos = updatedPlayer.prevPos;
-          player.destPos = updatedPlayer.destPos;
-        }
-      }
-    }
-  }
-};
-
-var handleUpdate = function handleUpdate(data) {
-  roomState = data.state;
-  emitters = data.emitters;
-  bullets = data.bullets;
-  enemy = data.enemy;
-
-  updatePlayer(data.players);
 };
 
 var addPlayer = function addPlayer(data) {
@@ -1215,4 +760,456 @@ window.onload = init;
 
 window.onunload = function () {
   socket.emit('disconnect');
+};
+'use strict';
+
+var updateSkills = function updateSkills() {
+  for (var i = 0; i < skills.length; i++) {
+    var skill = skills[i];
+
+    if (skill.image) {
+      skill.frame++;
+
+      if (skill.frame > 6) {
+        skill.frame = 0;
+        skill.currentSprite++;
+
+        // if currentSprite is greater - set active to false
+        if (skill.currentSprite > skill.sprites) {
+          skill.active = false;
+        }
+
+        // max x is 4 set back to 0 and increase y
+        if (skill.imagePos.x >= 4) {
+          skill.imagePos.x = 0;
+          skill.imagePos.y++;
+        } else {
+          skill.imagePos.x++;
+        }
+      }
+
+      // make the skill follow players
+      if (skill.type === 'Hp Regen') {
+        var player = players[skill.hash];
+
+        skill.pos = player.pos;
+      }
+    } else if (skill.type === 'bs1') {
+      skill.outerRadius *= 0.99;
+      skill.innerRadius *= 0.97;
+      skill.opacity += -0.01;
+      skill.life += -1;
+
+      skill.active = skill.life > 0;
+    } else if (skill.type === 'bs2') {
+      skill.outerRadius += 4;
+      skill.innerRadius += 3;
+      skill.opacity -= 0.003;
+      skill.life += -1;
+
+      skill.active = skill.life > 0;
+    }
+  }
+
+  skills = skills.filter(function (skill) {
+    return skill.active;
+  });
+};
+
+// all skills are 192 x 192
+var drawSkills = function drawSkills() {
+  for (var i = 0; i < skills.length; i++) {
+    var skill = skills[i];
+
+    ctx.save();
+    if (skill.image) {
+      ctx.drawImage(skill.image, skill.imagePos.x * 192, skill.imagePos.y * 192, 192, 192, skill.pos.x - skill.size / 2, skill.pos.y - skill.size / 2, skill.size, skill.size);
+    } else if (skill.type === 'bs1' || skill.type === 'bs2') {
+      var x = skill.pos.x;
+      var y = skill.pos.y;
+
+      var grad = ctx.createRadialGradient(x, y, 0, x, y, skill.outerRadius);
+      if (skill.type === 'bs1') {
+        grad.addColorStop(0, 'rgba(' + skill.color.r + ', ' + skill.color.g + ', ' + skill.color.b + ', 0)');
+        grad.addColorStop(1, 'rgba(' + skill.color.r + ', ' + skill.color.g + ', ' + skill.color.b + ', ' + skill.opacity + ')');
+      } else if (skill.type === 'bs2') {
+        grad.addColorStop(0, 'rgba(' + skill.color.r + ', ' + skill.color.g + ', ' + skill.color.b + ', ' + skill.opacity + ')');
+        grad.addColorStop(1, 'rgba(' + skill.color.r + ', ' + skill.color.g + ', ' + skill.color.b + ', 0)');
+      }
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, skill.outerRadius, 0, Math.PI * 2, false); // outer
+      ctx.arc(x, y, skill.innerRadius, 0, Math.PI * 2, true); // inner
+      ctx.fill();
+      ctx.closePath();
+    }
+    ctx.restore();
+  }
+};
+
+// show something when skill is used
+var handleSkill = function handleSkill(type, data) {
+  var skill = {
+    active: false
+  };
+
+  // set up sprite only if the image exists
+  if (type === 'normalAttack' && normalImage) {
+    skill = {
+      type: type,
+      pos: data.pos,
+      size: 100,
+      image: normalImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 7,
+      active: true
+    };
+  } else if (type === 'critcalAttack' && criticalImage) {
+    skill = {
+      type: type,
+      pos: data.pos,
+      size: 100,
+      image: criticalImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 11,
+      active: true
+    };
+  } else if (type === 'Final Strike' && finalStrikeImage) {
+    skill = {
+      type: type,
+      pos: data.pos,
+      size: 100,
+      image: finalStrikeImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 7,
+      active: true
+    };
+  } else if (type === 'Full Force' && fullForceImage) {
+    skill = {
+      type: type,
+      pos: data.pos,
+      size: 100,
+      image: fullForceImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 8,
+      active: true
+    };
+  } else if (type === 'bs1') {
+    var player = players[data.hash];
+
+    skill = {
+      type: type,
+      pos: player.pos,
+      color: {
+        r: Math.round(player.color.r),
+        g: Math.round(player.color.g),
+        b: Math.round(player.color.b)
+      },
+      outerRadius: 2 * (player.hitbox + player.graze),
+      innerRadius: 2 * (player.hitbox + player.graze),
+      opacity: 0.5,
+      life: 50,
+      active: true
+    };
+  } else if (type === 'bs2') {
+    var _player = players[data.hash];
+
+    skill = {
+      type: type,
+      pos: _player.pos,
+      color: {
+        r: Math.round(_player.color.r),
+        g: Math.round(_player.color.g),
+        b: Math.round(_player.color.b)
+      },
+      outerRadius: 1,
+      innerRadius: 0,
+      opacity: Math.Min((28 + 2 * _player.level) / 100, 1),
+      life: 120,
+      active: true
+    };
+  } else if (type === 'Smite' && smiteImage) {
+    skill = {
+      type: type,
+      pos: data.pos,
+      size: 125,
+      image: smiteImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 7,
+      active: true
+    };
+  } else if (type === 'Hp Regen' && hpRegenImage) {
+    var keys = Object.keys(players);
+    for (var i = 0; i < keys.length; i++) {
+      skill = {
+        type: type,
+        hash: players[keys[i]].hash,
+        pos: players[keys[i]].pos,
+        size: 100,
+        image: hpRegenImage,
+        imagePos: {
+          x: 0,
+          y: 0
+        },
+        frame: 0,
+        currentSprite: 0,
+        sprites: 20,
+        active: true
+      };
+      skills.push(skill);
+    }
+    return;
+  } else if (type === 'Fireball' && fireballImage) {
+    var _player2 = players[hash];
+    var size = (_player2.hitbox + _player2.graze + 25) * 2;
+
+    skill = {
+      type: type,
+      pos: data.pos,
+      size: size,
+      image: fireballImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 15,
+      active: true
+    };
+  } else if (type === 'Fire Storm' && fireStormImage) {
+    // randomize pos slightly
+    var pos = {
+      x: data.pos.x + Math.floor(Math.random() * 41 - 20),
+      y: data.pos.y + Math.floor(Math.random() * 41 - 20)
+    };
+
+    skill = {
+      type: type,
+      pos: pos,
+      size: 100,
+      image: fireStormImage,
+      imagePos: {
+        x: 0,
+        y: 0
+      },
+      frame: 0,
+      currentSprite: 0,
+      sprites: 12,
+      active: true
+    };
+  }
+
+  skills.push(skill);
+};
+'use strict';
+
+// client updates to server
+// update client's preparing state
+var updatePreparing = function updatePreparing() {
+  var user = players[hash];
+
+  // dont check update if user is undefined
+  if (!user) {
+    return;
+  }
+
+  updated = false;
+  var toggleReady = false;
+
+  var checkKeyW = myKeys.keydown[myKeys.KEYBOARD.KEY_W] && !prevKeyDown.KEY_W;
+  var checkKeyS = myKeys.keydown[myKeys.KEYBOARD.KEY_S] && !prevKeyDown.KEY_S;
+  var checkKeyJ = myKeys.keydown[myKeys.KEYBOARD.KEY_J] && !prevKeyDown.KEY_J;
+
+  if (checkKeyW && !user.ready) {
+    if (user.type === 'fighter') {
+      user.type = 'aura';
+    } else if (user.type === 'bomber') {
+      user.type = 'fighter';
+    } else if (user.type === 'cleric') {
+      user.type = 'bomber';
+    } else if (user.type === 'aura') {
+      user.type = 'cleric';
+    }
+    updated = true;
+  }
+  if (checkKeyS && !user.ready) {
+    if (user.type === 'fighter') {
+      user.type = 'bomber';
+    } else if (user.type === 'bomber') {
+      user.type = 'cleric';
+    } else if (user.type === 'cleric') {
+      user.type = 'aura';
+    } else if (user.type === 'aura') {
+      user.type = 'fighter';
+    }
+    updated = true;
+  }
+
+  // check if user is ready.
+  if (checkKeyJ) {
+    toggleReady = true;
+    updated = true;
+  }
+
+  if (updated) {
+    socket.emit('updatePlayer', {
+      type: user.type,
+      toggleReady: toggleReady
+    });
+  }
+};
+
+// update client's playing state
+var updatePlaying = function updatePlaying() {
+  var user = players[hash];
+
+  // dont check update if user is undefined
+  if (!user) return;
+
+  updated = false;
+  attacking = false;
+  toggleSkill1 = false;
+  toggleSkill2 = false;
+
+  user.prevPos = user.pos;
+  user.alpha = 0.05;
+
+  // movement check
+  // if shift is down or skill is active reduce movement by 50%
+  var modifier = myKeys.keydown[myKeys.KEYBOARD.KEY_SHIFT] || user.skill1Used || user.skill2Used ? 0.5 : 1;
+
+  if (myKeys.keydown[myKeys.KEYBOARD.KEY_W]) {
+    user.destPos.y += -user.speed * dt * modifier;
+    updated = true;
+  }
+  if (myKeys.keydown[myKeys.KEYBOARD.KEY_A]) {
+    user.destPos.x += -user.speed * dt * modifier;
+    updated = true;
+  }
+  if (myKeys.keydown[myKeys.KEYBOARD.KEY_S]) {
+    user.destPos.y += user.speed * dt * modifier;
+    updated = true;
+  }
+  if (myKeys.keydown[myKeys.KEYBOARD.KEY_D]) {
+    user.destPos.x += user.speed * dt * modifier;
+    updated = true;
+  }
+
+  var checkKeyJ = myKeys.keydown[myKeys.KEYBOARD.KEY_J] && !prevKeyDown.KEY_J;
+  var checkKeyK = myKeys.keydown[myKeys.KEYBOARD.KEY_K] && !prevKeyDown.KEY_K;
+  var checkKeyL = myKeys.keydown[myKeys.KEYBOARD.KEY_L] && !prevKeyDown.KEY_L;
+
+  // basic attack
+  if (checkKeyJ && user.currentAttRate <= 0) {
+    attacking = true;
+    updated = true;
+  }
+
+  // skill 1
+  if (checkKeyK && user.energy >= user.skill1Cost) {
+    toggleSkill1 = true;
+    updated = true;
+  }
+
+  // skill 2
+  if (checkKeyL && user.energy >= user.skill2Cost) {
+    toggleSkill2 = true;
+    updated = true;
+  }
+
+  // prevent player from going out of bound
+  user.destPos.x = clamp(user.destPos.x, user.hitbox, 640 - user.hitbox);
+  user.destPos.y = clamp(user.destPos.y, user.hitbox, 540 - user.hitbox);
+
+  // console.log(user.pos, user.prevPos, user.destPos);
+  var checkX = user.pos.x > user.destPos.x + 0.05 || user.pos.x < user.destPos.x - 0.05;
+  var checkY = user.pos.y > user.destPos.y + 0.05 || user.pos.y < user.destPos.y - 0.05;
+
+  // if this client's user moves, send to server to update server
+  if (updated === true || checkX || checkY) {
+    socket.emit('updatePlayer', {
+      pos: user.pos,
+      prevPos: user.prevPos,
+      destPos: user.destPos,
+      attacking: attacking,
+      toggleSkill1: toggleSkill1,
+      toggleSkill2: toggleSkill2
+    });
+  }
+};
+
+// Updates from server
+var updatePlayer = function updatePlayer(users) {
+  var keys = Object.keys(users);
+
+  // loop through players to update
+  for (var i = 0; i < keys.length; i++) {
+    var player = players[keys[i]];
+    var updatedPlayer = users[keys[i]];
+
+    // if player exist and last update is less than server's - update the player
+    // else - do nothing
+    if (player) {
+      // values that should be constantly updated
+      player.hp = updatedPlayer.hp;
+      player.energy = updatedPlayer.energy;
+      player.currentAttRate = updatedPlayer.currentAttRate;
+      player.currentExp = updatedPlayer.currentExp;
+      player.isHit = updatedPlayer.isHit;
+      player.reviveTimer = updatedPlayer.reviveTimer;
+      player.skill1Used = updatedPlayer.skill1Used;
+      player.skill2Used = updatedPlayer.skill2Used;
+      player.critcalPos = updatedPlayer.critcalPos;
+
+      // values that should be updated if the client emited updatedPlayer
+      if (player.lastUpdate < updatedPlayer.lastUpdate) {
+        // Move last update out of player and keep track of rooms last update?
+        player.lastUpdate = updatedPlayer.lastUpdate;
+
+        player.alpha = 0.05;
+
+        // only update other users pos
+        if (player.hash !== hash) {
+          player.prevPos = updatedPlayer.prevPos;
+          player.destPos = updatedPlayer.destPos;
+        }
+      }
+    }
+  }
+};
+
+var handleUpdate = function handleUpdate(data) {
+  roomState = data.state;
+  emitters = data.emitters;
+  bullets = data.bullets;
+  enemy = data.enemy;
+
+  updatePlayer(data.players);
 };
