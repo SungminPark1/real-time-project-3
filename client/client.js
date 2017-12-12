@@ -29,11 +29,6 @@ let overlay;
 let changeRoom;
 let isChangingRoom = false;
 
-// side bar element
-let roomInfo;
-let roomList;
-let refreshRooms;
-
 // draw related
 // help keep lower spec pc move at the same speed
 let lastTime = new Date().getTime();
@@ -98,31 +93,49 @@ const updateSkills = () => {
   for (let i = 0; i < skills.length; i++) {
     const skill = skills[i];
 
-    skill.frame++;
+    if (skill.image) {
+      skill.frame++;
 
-    if (skill.frame > 6) {
-      skill.frame = 0;
-      skill.currentSprite++;
+      if (skill.frame > 6) {
+        skill.frame = 0;
+        skill.currentSprite++;
 
-      // if currentSprite is greater - set active to false
-      if (skill.currentSprite > skill.sprites) {
-        skill.active = false;
+        // if currentSprite is greater - set active to false
+        if (skill.currentSprite > skill.sprites) {
+          skill.active = false;
+        }
+
+        // max x is 4 set back to 0 and increase y
+        if (skill.imagePos.x >= 4) {
+          skill.imagePos.x = 0;
+          skill.imagePos.y++;
+        } else {
+          skill.imagePos.x++;
+        }
       }
 
-      // max x is 4 set back to 0 and increase y
-      if (skill.imagePos.x >= 4) {
-        skill.imagePos.x = 0;
-        skill.imagePos.y++;
-      } else {
-        skill.imagePos.x++;
+      // make the skill follow players
+      if (skill.type === 'Hp Regen') {
+        const player = players[skill.hash];
+
+        skill.pos = player.pos;
       }
-    }
+    } else if (skill.type === 'bs1') {
+      skill.outerRadius *= 0.99;
+      skill.innerRadius *= 0.97;
+      skill.opacity += -0.01;
+      skill.life += -1;
 
-    // make the skill follow players
-    if (skill.type === 'Hp Regen') {
-      const player = players[skill.hash];
+      console.log(skill.active);
+      skill.active = skill.life > 0;
+      console.log(skill.active);
+    } else if (skill.type === 'bs2') {
+      skill.outerRadius += 4;
+      skill.innerRadius += 3;
+      skill.opacity -= 0.003;
+      skill.life += -1;
 
-      skill.pos = player.pos;
+      skill.active = skill.life > 0;
     }
   }
 
@@ -141,6 +154,25 @@ const drawSkills = () => {
         skill.imagePos.x * 192, skill.imagePos.y * 192, 192, 192,
         skill.pos.x - (skill.size / 2), skill.pos.y - (skill.size / 2), skill.size, skill.size
       );
+    } else if (skill.type === 'bs1' || skill.type === 'bs2') {
+      const x = skill.pos.x;
+      const y = skill.pos.y;
+
+      const grad = ctx.createRadialGradient(x, y, 0, x, y, skill.outerRadius);
+      if (skill.type === 'bs1') {
+        grad.addColorStop(0, `rgba(${skill.color.r}, ${skill.color.g}, ${skill.color.b}, 0)`);
+        grad.addColorStop(1, `rgba(${skill.color.r}, ${skill.color.g}, ${skill.color.b}, ${skill.opacity})`);
+      } else if (skill.type === 'bs2') {
+        grad.addColorStop(0, `rgba(${skill.color.r}, ${skill.color.g}, ${skill.color.b}, ${skill.opacity})`);
+        grad.addColorStop(1, `rgba(${skill.color.r}, ${skill.color.g}, ${skill.color.b}, 0)`);
+      }
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, skill.outerRadius, 0, Math.PI * 2, false); // outer
+      ctx.arc(x, y, skill.innerRadius, 0, Math.PI * 2, true); // inner
+      ctx.fill();
+      ctx.closePath();
     }
     ctx.restore();
   }
@@ -211,6 +243,40 @@ const handleSkill = (type, data) => {
       frame: 0,
       currentSprite: 0,
       sprites: 8,
+      active: true,
+    };
+  } else if (type === 'bs1') {
+    const player = players[data.hash];
+
+    skill = {
+      type,
+      pos: player.pos,
+      color: {
+        r: Math.round(player.color.r),
+        g: Math.round(player.color.g),
+        b: Math.round(player.color.b),
+      },
+      outerRadius: (2 * (player.hitbox + player.graze)),
+      innerRadius: (2 * (player.hitbox + player.graze)),
+      opacity: 0.5,
+      life: 50,
+      active: true,
+    };
+  } else if (type === 'bs2') {
+    const player = players[data.hash];
+
+    skill = {
+      type,
+      pos: player.pos,
+      color: {
+        r: Math.round(player.color.r),
+        g: Math.round(player.color.g),
+        b: Math.round(player.color.b),
+      },
+      outerRadius: 1,
+      innerRadius: 0,
+      opacity: Math.Min((28 + (2 * player.level)) / 100, 1),
+      life: 120,
       active: true,
     };
   } else if (type === 'Smite' && smiteImage) {
@@ -977,7 +1043,6 @@ const handleInitData = (data) => {
   bullets = data.bullets || [];
 
   overlay.style.display = 'none';
-  roomInfo.style.display = 'none';
 
   window.requestAnimationFrame(handleDraw);
 };
@@ -1052,6 +1117,7 @@ const removePlayer = (userHash) => {
 const levelPlayer = (data) => {
   const player = players[data.hash];
 
+  player.level = data.player.level;
   player.maxHp = data.player.maxHp;
   player.maxEnergy = data.player.maxEnergy;
   player.maxDamage = data.player.maxDamage;
@@ -1090,29 +1156,17 @@ const playerUsedSkill = (data) => {
   handleSkill(data.skillName, data);
 };
 
-const roomRefresh = (data) => {
-  console.log('got room lists');
-  const keys = Object.keys(data);
-  roomList.innerHTML = '';
-
-  for (let i = 0; i < keys.length; i++) {
-    const room = data[keys[i]];
-    let content = `<div class="room__container"><h2>${keys[i]}</h2>`;
-    content += `<p>State: ${room.state}</p><p>Player(s): ${room.count}</p></div>`;
-
-    roomList.innerHTML += content;
-  }
-};
-
 const changeRoomError = (data) => {
   isChangingRoom = false;
   console.log(data.msg);
+  socket.emit('disconnect');
 };
 
 const usernameError = (data) => {
   username.style.border = 'solid 1px red';
   isChangingRoom = false;
   console.log(data.msg);
+  socket.emit('disconnect');
 };
 
 const setupSocket = () => {
@@ -1135,7 +1189,6 @@ const setupSocket = () => {
   socket.on('playerUsedSkill', playerUsedSkill);
 
   // lobby related
-  socket.on('roomList', roomRefresh);
   socket.on('changeRoomError', changeRoomError);
   socket.on('usernameError', usernameError);
 };
@@ -1171,11 +1224,6 @@ const init = () => {
   overlay = document.querySelector('.canvas__overlay');
   changeRoom = document.querySelector('.change__room');
 
-  // sidebar
-  roomInfo = document.querySelector('.room__infos');
-  roomList = document.querySelector('.room__list');
-  refreshRooms = document.querySelector('.refresh__room');
-
   // event listeners
   changeRoom.addEventListener('click', () => {
     // if user is valid connect socket and emit join
@@ -1183,9 +1231,12 @@ const init = () => {
       // prevent attempt to change room multiple times
       isChangingRoom = true;
 
-      socket = io.connect();
+      // prevent multiple socket connects
+      if (!socket) {
+        socket = io.connect();
 
-      setupSocket();
+        setupSocket();
+      }
 
       socket.emit('join', {
         room: roomname.value,
@@ -1197,10 +1248,6 @@ const init = () => {
     } else {
       roomname.style.border = 'solid 1px red';
     }
-  });
-
-  refreshRooms.addEventListener('click', () => {
-    // socket.emit('refreshRoom');
   });
 
   window.addEventListener('keydown', (e) => {

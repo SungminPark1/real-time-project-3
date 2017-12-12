@@ -31,11 +31,6 @@ var overlay = void 0;
 var changeRoom = void 0;
 var isChangingRoom = false;
 
-// side bar element
-var roomInfo = void 0;
-var roomList = void 0;
-var refreshRooms = void 0;
-
 // draw related
 // help keep lower spec pc move at the same speed
 var lastTime = new Date().getTime();
@@ -100,31 +95,49 @@ var updateSkills = function updateSkills() {
   for (var i = 0; i < skills.length; i++) {
     var skill = skills[i];
 
-    skill.frame++;
+    if (skill.image) {
+      skill.frame++;
 
-    if (skill.frame > 6) {
-      skill.frame = 0;
-      skill.currentSprite++;
+      if (skill.frame > 6) {
+        skill.frame = 0;
+        skill.currentSprite++;
 
-      // if currentSprite is greater - set active to false
-      if (skill.currentSprite > skill.sprites) {
-        skill.active = false;
+        // if currentSprite is greater - set active to false
+        if (skill.currentSprite > skill.sprites) {
+          skill.active = false;
+        }
+
+        // max x is 4 set back to 0 and increase y
+        if (skill.imagePos.x >= 4) {
+          skill.imagePos.x = 0;
+          skill.imagePos.y++;
+        } else {
+          skill.imagePos.x++;
+        }
       }
 
-      // max x is 4 set back to 0 and increase y
-      if (skill.imagePos.x >= 4) {
-        skill.imagePos.x = 0;
-        skill.imagePos.y++;
-      } else {
-        skill.imagePos.x++;
+      // make the skill follow players
+      if (skill.type === 'Hp Regen') {
+        var player = players[skill.hash];
+
+        skill.pos = player.pos;
       }
-    }
+    } else if (skill.type === 'bs1') {
+      skill.outerRadius *= 0.99;
+      skill.innerRadius *= 0.97;
+      skill.opacity += -0.01;
+      skill.life += -1;
 
-    // make the skill follow players
-    if (skill.type === 'Hp Regen') {
-      var player = players[skill.hash];
+      console.log(skill.active);
+      skill.active = skill.life > 0;
+      console.log(skill.active);
+    } else if (skill.type === 'bs2') {
+      skill.outerRadius += 4;
+      skill.innerRadius += 3;
+      skill.opacity -= 0.003;
+      skill.life += -1;
 
-      skill.pos = player.pos;
+      skill.active = skill.life > 0;
     }
   }
 
@@ -141,6 +154,25 @@ var drawSkills = function drawSkills() {
     ctx.save();
     if (skill.image) {
       ctx.drawImage(skill.image, skill.imagePos.x * 192, skill.imagePos.y * 192, 192, 192, skill.pos.x - skill.size / 2, skill.pos.y - skill.size / 2, skill.size, skill.size);
+    } else if (skill.type === 'bs1' || skill.type === 'bs2') {
+      var x = skill.pos.x;
+      var y = skill.pos.y;
+
+      var grad = ctx.createRadialGradient(x, y, 0, x, y, skill.outerRadius);
+      if (skill.type === 'bs1') {
+        grad.addColorStop(0, 'rgba(' + skill.color.r + ', ' + skill.color.g + ', ' + skill.color.b + ', 0)');
+        grad.addColorStop(1, 'rgba(' + skill.color.r + ', ' + skill.color.g + ', ' + skill.color.b + ', ' + skill.opacity + ')');
+      } else if (skill.type === 'bs2') {
+        grad.addColorStop(0, 'rgba(' + skill.color.r + ', ' + skill.color.g + ', ' + skill.color.b + ', ' + skill.opacity + ')');
+        grad.addColorStop(1, 'rgba(' + skill.color.r + ', ' + skill.color.g + ', ' + skill.color.b + ', 0)');
+      }
+
+      ctx.fillStyle = grad;
+      ctx.beginPath();
+      ctx.arc(x, y, skill.outerRadius, 0, Math.PI * 2, false); // outer
+      ctx.arc(x, y, skill.innerRadius, 0, Math.PI * 2, true); // inner
+      ctx.fill();
+      ctx.closePath();
     }
     ctx.restore();
   }
@@ -213,6 +245,40 @@ var handleSkill = function handleSkill(type, data) {
       sprites: 8,
       active: true
     };
+  } else if (type === 'bs1') {
+    var player = players[data.hash];
+
+    skill = {
+      type: type,
+      pos: player.pos,
+      color: {
+        r: Math.round(player.color.r),
+        g: Math.round(player.color.g),
+        b: Math.round(player.color.b)
+      },
+      outerRadius: 2 * (player.hitbox + player.graze),
+      innerRadius: 2 * (player.hitbox + player.graze),
+      opacity: 0.5,
+      life: 50,
+      active: true
+    };
+  } else if (type === 'bs2') {
+    var _player = players[data.hash];
+
+    skill = {
+      type: type,
+      pos: _player.pos,
+      color: {
+        r: Math.round(_player.color.r),
+        g: Math.round(_player.color.g),
+        b: Math.round(_player.color.b)
+      },
+      outerRadius: 1,
+      innerRadius: 0,
+      opacity: Math.Min((28 + 2 * _player.level) / 100, 1),
+      life: 120,
+      active: true
+    };
   } else if (type === 'Smite' && smiteImage) {
     skill = {
       type: type,
@@ -250,8 +316,8 @@ var handleSkill = function handleSkill(type, data) {
     }
     return;
   } else if (type === 'Fireball' && fireballImage) {
-    var player = players[hash];
-    var size = (player.hitbox + player.graze + 25) * 2;
+    var _player2 = players[hash];
+    var size = (_player2.hitbox + _player2.graze + 25) * 2;
 
     skill = {
       type: type,
@@ -921,7 +987,6 @@ var handleInitData = function handleInitData(data) {
   bullets = data.bullets || [];
 
   overlay.style.display = 'none';
-  roomInfo.style.display = 'none';
 
   window.requestAnimationFrame(handleDraw);
 };
@@ -996,6 +1061,7 @@ var removePlayer = function removePlayer(userHash) {
 var levelPlayer = function levelPlayer(data) {
   var player = players[data.hash];
 
+  player.level = data.player.level;
   player.maxHp = data.player.maxHp;
   player.maxEnergy = data.player.maxEnergy;
   player.maxDamage = data.player.maxDamage;
@@ -1034,29 +1100,17 @@ var playerUsedSkill = function playerUsedSkill(data) {
   handleSkill(data.skillName, data);
 };
 
-var roomRefresh = function roomRefresh(data) {
-  console.log('got room lists');
-  var keys = Object.keys(data);
-  roomList.innerHTML = '';
-
-  for (var i = 0; i < keys.length; i++) {
-    var room = data[keys[i]];
-    var content = '<div class="room__container"><h2>' + keys[i] + '</h2>';
-    content += '<p>State: ' + room.state + '</p><p>Player(s): ' + room.count + '</p></div>';
-
-    roomList.innerHTML += content;
-  }
-};
-
 var changeRoomError = function changeRoomError(data) {
   isChangingRoom = false;
   console.log(data.msg);
+  socket.emit('disconnect');
 };
 
 var usernameError = function usernameError(data) {
   username.style.border = 'solid 1px red';
   isChangingRoom = false;
   console.log(data.msg);
+  socket.emit('disconnect');
 };
 
 var setupSocket = function setupSocket() {
@@ -1079,7 +1133,6 @@ var setupSocket = function setupSocket() {
   socket.on('playerUsedSkill', playerUsedSkill);
 
   // lobby related
-  socket.on('roomList', roomRefresh);
   socket.on('changeRoomError', changeRoomError);
   socket.on('usernameError', usernameError);
 };
@@ -1115,11 +1168,6 @@ var init = function init() {
   overlay = document.querySelector('.canvas__overlay');
   changeRoom = document.querySelector('.change__room');
 
-  // sidebar
-  roomInfo = document.querySelector('.room__infos');
-  roomList = document.querySelector('.room__list');
-  refreshRooms = document.querySelector('.refresh__room');
-
   // event listeners
   changeRoom.addEventListener('click', function () {
     // if user is valid connect socket and emit join
@@ -1127,9 +1175,12 @@ var init = function init() {
       // prevent attempt to change room multiple times
       isChangingRoom = true;
 
-      socket = io.connect();
+      // prevent multiple socket connects
+      if (!socket) {
+        socket = io.connect();
 
-      setupSocket();
+        setupSocket();
+      }
 
       socket.emit('join', {
         room: roomname.value,
@@ -1141,10 +1192,6 @@ var init = function init() {
     } else {
       roomname.style.border = 'solid 1px red';
     }
-  });
-
-  refreshRooms.addEventListener('click', function () {
-    // socket.emit('refreshRoom');
   });
 
   window.addEventListener('keydown', function (e) {

@@ -108,9 +108,20 @@ class Player {
 
   // return max stats
   getMaxStats() {
-    const { maxHp, maxEnergy, maxDamage, minDamage, attRate, exp, hitbox, graze, speed } = this;
+    const {
+      level,
+      maxHp,
+      maxEnergy,
+      maxDamage,
+      minDamage,
+      attRate,
+      exp,
+      hitbox,
+      graze,
+      speed,
+    } = this;
 
-    return { maxHp, maxEnergy, maxDamage, minDamage, attRate, exp, hitbox, graze, speed };
+    return { level, maxHp, maxEnergy, maxDamage, minDamage, attRate, exp, hitbox, graze, speed };
   }
 
   checkCritcal() {

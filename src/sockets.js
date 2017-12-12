@@ -40,13 +40,13 @@ const onJoin = (sock) => {
   */
 
   socket.on('join', (data) => {
-    const hash = xxh.h32(`${socket.id}${new Date().getTime()}`, 0xCAFEBABE).toString(16);
+    if (!socket.hash) {
+      const hash = xxh.h32(`${socket.id}${new Date().getTime()}`, 0xCAFEBABE).toString(16);
 
-    // console.log(`new player: ${hash}`);
+      socket.hash = hash;
 
-    socket.hash = hash;
-
-    socket.emit('hash', { hash });
+      socket.emit('hash', { hash });
+    }
 
     const roomExists = gameRooms[data.room];
     const playersNum = roomExists ? Object.keys(roomExists.players).length : 0;

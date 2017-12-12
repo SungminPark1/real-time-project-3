@@ -102,7 +102,7 @@ class Bomber extends Player {
       enemyBullets = enemyBullets.filter(bullet => bullet.active);
 
       boss.hp -= this.minDamage;
-      this.energy -= this.skill1Cost;
+      this.energy -= this.skill2Cost;
     }
     this.skill2Used = false;
   }
