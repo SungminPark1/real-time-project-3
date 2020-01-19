@@ -20,7 +20,7 @@ This game app was built using Javascipt, Express, socket.io, custom CSS, Node Ci
 Coming soon
 
 ## Install
-To get a development server running, close the projectm type npm install followed by npm start. It will default to localhost:3000
+To get a development server running, clone the project and type `npm install` followed by `npm start`. It will default to localhost:3000
 
 ## License:
 MIT © Sungmin Park
