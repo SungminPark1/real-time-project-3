@@ -7,7 +7,7 @@ Bullet Absorber is a real time game with the goal of gaining exprience and energ
  - Create a "Room" for multi-player experience. 
 
  ## Controls:
- - For movement press the following keys: W A S D
+ - For movement in the menu wjpress the following keys: W A S D
  - To reduce speed: Shift (hold)
  - To Confirm / Attack press J
  - Skill 1: K
