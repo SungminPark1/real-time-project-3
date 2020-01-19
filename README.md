@@ -13,3 +13,15 @@ Bullet Absorber is a real time game with the goal of gaining exprience and energ
  - Skill 1: K
  - Skill 2: L
 
+ ## Technology Stack
+This game app was built using Javascipt, Express, socket.io, custom CSS, Node CircleCI.
+
+## Live Link:
+Coming soon
+
+## Install
+To get a development server running, close the projectm type npm install followed by npm start. It will default to localhost:3000
+
+## License:
+MIT © Sungmin Park
+
